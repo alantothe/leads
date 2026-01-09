@@ -8,6 +8,7 @@ from features.tags.api.routes import router as tags_router
 from features.leads.api.routes import router as leads_router
 from features.fetch_logs.api.routes import router as fetch_logs_router
 from features.dev.api.routes import router as dev_router
+from features.instagram_feeds.api.routes import router as instagram_feeds_router
 
 app = FastAPI(title="RSS Leads API")
 
@@ -27,6 +28,7 @@ app.include_router(tags_router)
 app.include_router(leads_router)
 app.include_router(fetch_logs_router)
 app.include_router(feed_router)
+app.include_router(instagram_feeds_router)
 app.include_router(dev_router)
 
 

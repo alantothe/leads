@@ -362,6 +362,42 @@ td {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Instagram Posts */
+.instagram-media {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.instagram-media img,
+.instagram-media video {
+  max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  border-radius: 0.5rem;
+  object-fit: contain;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.instagram-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.media-type-badge {
+  background: hsl(220 100% 95%);
+  color: hsl(220 100% 40%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
 .lead-header {
   display: flex;
   justify-content: space-between;

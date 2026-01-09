@@ -106,3 +106,29 @@ export const devApi = {
   clearAll: () => request('/dev/clear-all', { method: 'DELETE' }),
   clearFetched: () => request('/dev/clear-fetched', { method: 'DELETE' }),
 };
+
+// Instagram Feeds API
+export const instagramFeedsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/instagram-feeds${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/instagram-feeds/${id}`),
+  create: (data) => request('/instagram-feeds', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/instagram-feeds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  activate: (id) => request(`/instagram-feeds/${id}/activate`, { method: 'PATCH' }),
+  deactivate: (id) => request(`/instagram-feeds/${id}/deactivate`, { method: 'PATCH' }),
+  delete: (id) => request(`/instagram-feeds/${id}`, { method: 'DELETE' }),
+  fetch: (id) => request(`/instagram-feeds/${id}/fetch`, { method: 'POST' }),
+  fetchAll: () => request('/instagram-feeds/fetch-all', { method: 'POST' }),
+};
+
+// Instagram Posts API
+export const instagramPostsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/instagram-feeds/posts${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/instagram-feeds/posts/${id}`),
+  delete: (id) => request(`/instagram-feeds/posts/${id}`, { method: 'DELETE' }),
+};

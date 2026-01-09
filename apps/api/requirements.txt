@@ -4,3 +4,5 @@ uvicorn
 pydantic
 python-dateutil
 aiosqlite
+requests
+python-dotenv

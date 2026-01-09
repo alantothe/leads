@@ -10,9 +10,11 @@ export default function Layout() {
         <div className="nav-links">
           <Link to="/">Dashboard</Link>
           <Link to="/categories">Categories</Link>
-          <Link to="/feeds">Feeds</Link>
+          <Link to="/feeds">RSS Feeds</Link>
+          <Link to="/instagram-feeds">Instagram</Link>
           <Link to="/tags">Tags</Link>
-          <Link to="/leads">Leads</Link>
+          <Link to="/leads">RSS Leads</Link>
+          <Link to="/instagram-posts">IG Posts</Link>
           <Link to="/logs">Fetch Logs</Link>
         </div>
       </nav>
