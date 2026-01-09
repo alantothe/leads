@@ -1,35 +1,25 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Categories from './pages/Categories';
+import Feeds from './pages/Feeds';
+import Tags from './pages/Tags';
+import Leads from './pages/Leads';
+import FetchLogs from './pages/FetchLogs';
+
 export default function App() {
   return (
-    <main className="page">
-      <header className="hero">
-        <p className="kicker">Turbo + FastAPI</p>
-        <h1>Vite React Frontend</h1>
-        <p className="lede">
-          The frontend workspace is ready. Wire it up to your FastAPI routes and
-          ship.
-        </p>
-        <div className="actions">
-          <a className="button" href="https://vitejs.dev" target="_blank" rel="noreferrer">
-            Vite Docs
-          </a>
-          <a
-            className="button secondary"
-            href="https://react.dev"
-            target="_blank"
-            rel="noreferrer"
-          >
-            React Docs
-          </a>
-        </div>
-      </header>
-      <section className="panel">
-        <h2>Next steps</h2>
-        <ul>
-          <li>Call your FastAPI endpoints from `app`.</li>
-          <li>Replace this layout with your product UI.</li>
-          <li>Run `bun run dev` from the repo root.</li>
-        </ul>
-      </section>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="feeds" element={<Feeds />} />
+          <Route path="tags" element={<Tags />} />
+          <Route path="leads" element={<Leads />} />
+          <Route path="logs" element={<FetchLogs />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
