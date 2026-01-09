@@ -1,0 +1,17 @@
+{
+  "name": "tubro",
+  "packageManager": "bun@1.3.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "workspaces": [
+    "app",
+    "apps/*"
+  ],
+  "devDependencies": {
+    "turbo": "^2.7.3"
+  }
+}

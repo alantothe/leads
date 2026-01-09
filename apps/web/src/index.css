@@ -1,0 +1,179 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Space+Grotesk:wght@400;500;600&display=swap");
+
+:root {
+  color-scheme: light;
+  --bg: #f7f2e8;
+  --bg-strong: #efe7d8;
+  --ink: #1a1a18;
+  --muted: #5a544f;
+  --accent: #ff7a59;
+  --accent-2: #1aa39a;
+  --card: #ffffff;
+  --shadow: 0 20px 60px rgba(26, 26, 24, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top right, rgba(26, 163, 154, 0.18), transparent 45%),
+    radial-gradient(circle at 20% 20%, rgba(255, 122, 89, 0.22), transparent 40%),
+    linear-gradient(180deg, var(--bg), var(--bg-strong));
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(26, 26, 24, 0.04) 0,
+    rgba(26, 26, 24, 0.04) 2px,
+    transparent 2px,
+    transparent 10px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 80px 24px 96px;
+  display: grid;
+  gap: 32px;
+}
+
+.hero {
+  background: var(--card);
+  border-radius: 28px;
+  padding: 48px;
+  box-shadow: var(--shadow);
+  animation: floatIn 0.8s ease both;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-2);
+  margin: 0 0 12px;
+}
+
+h1 {
+  font-family: "Fraunces", "Space Grotesk", serif;
+  font-size: clamp(2.6rem, 4vw, 3.6rem);
+  margin: 0 0 16px;
+}
+
+.lede {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin: 0 0 32px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  animation: fadeUp 0.8s ease both;
+  animation-delay: 0.2s;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(255, 122, 89, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(255, 122, 89, 0.35);
+}
+
+.button.secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(26, 26, 24, 0.2);
+  box-shadow: none;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  padding: 32px;
+  border: 1px solid rgba(26, 26, 24, 0.08);
+  backdrop-filter: blur(6px);
+  animation: fadeUp 0.9s ease both;
+  animation-delay: 0.35s;
+}
+
+.panel h2 {
+  margin: 0 0 16px;
+  font-family: "Fraunces", "Space Grotesk", serif;
+}
+
+.panel ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  display: grid;
+  gap: 10px;
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 56px 20px 72px;
+  }
+
+  .hero {
+    padding: 32px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
