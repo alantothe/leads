@@ -2,6 +2,6 @@
   "name": "python-server",
   "private": true,
   "scripts": {
-    "dev": "cd .. && python3 -m uvicorn app.main:app --reload"
+    "dev": "python3 -m uvicorn app.main:app --reload"
   }
 }

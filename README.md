@@ -41,14 +41,14 @@ A full-stack application for managing RSS feeds, organizing them by categories a
 
 2. **Install Python dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install -r apps/api/requirements.txt
    ```
 
 3. **Initialize the database**
    ```bash
-   python3 lib/database/init_db.py
+   python3 apps/api/lib/database/init_db.py
    ```
-   This creates `leads.db` with sample data.
+   This creates `apps/api/leads.db` with sample data.
 
 4. **Install frontend dependencies**
    ```bash
@@ -61,14 +61,14 @@ A full-stack application for managing RSS feeds, organizing them by categories a
 
 Terminal 1 - Backend:
 ```bash
-cd app
+cd apps/api
 bun run dev
 ```
 Backend runs on http://localhost:8000
 
 Terminal 2 - Frontend:
 ```bash
-cd apps/web
+cd apps/client
 bun run dev
 ```
 Frontend runs on http://localhost:5173
@@ -151,33 +151,33 @@ The database comes pre-populated with:
 ### Project Structure
 
 ```
-├── app/                    # Python backend
-│   └── main.py            # FastAPI app
 ├── apps/
-│   └── web/               # React frontend
+│   ├── api/               # Python backend
+│   │   ├── app/           # FastAPI app
+│   │   ├── features/      # Backend features
+│   │   │   ├── categories/
+│   │   │   ├── feeds/
+│   │   │   ├── leads/
+│   │   │   ├── tags/
+│   │   │   └── fetch_logs/
+│   │   ├── lib/
+│   │   │   └── database/  # Database utilities
+│   │   ├── leads.db       # SQLite database
+│   │   └── requirements.txt # Python dependencies
+│   └── client/            # React frontend
 │       └── src/
 │           ├── api.js     # API client
 │           ├── components/ # Shared components
 │           └── pages/     # Page components
-├── features/              # Backend features
-│   ├── categories/
-│   ├── feeds/
-│   ├── leads/
-│   ├── tags/
-│   └── fetch_logs/
-├── lib/
-│   └── database/          # Database utilities
-├── leads.db               # SQLite database
-└── requirements.txt       # Python dependencies
 ```
 
 ### Adding New Features
 
-1. Create a new feature directory in `features/`
+1. Create a new feature directory in `apps/api/features/`
 2. Add schema models with Pydantic
 3. Create API routes
-4. Add routes to `app/main.py`
-5. Create corresponding UI page in `apps/web/src/pages/`
+4. Add routes to `apps/api/app/main.py`
+5. Create corresponding UI page in `apps/client/src/pages/`
 6. Add route to `App.jsx`
 
 ## API Documentation

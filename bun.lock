@@ -7,10 +7,10 @@
         "turbo": "^2.7.3",
       },
     },
-    "app": {
+    "apps/api": {
       "name": "python-server",
     },
-    "apps/web": {
+    "apps/client": {
       "name": "react-cleint",
       "version": "0.0.0",
       "dependencies": {
@@ -225,11 +225,11 @@
 
     "postcss": ["postcss@8.5.6", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg=="],
 
-    "python-server": ["python-server@workspace:app"],
+    "python-server": ["python-server@workspace:apps/api"],
 
     "react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
 
-    "react-cleint": ["react-cleint@workspace:apps/web"],
+    "react-cleint": ["react-cleint@workspace:apps/client"],
 
     "react-dom": ["react-dom@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0", "scheduler": "^0.23.2" }, "peerDependencies": { "react": "^18.3.1" } }, "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw=="],
 

@@ -1,7 +1,8 @@
 # API Routes
 
-This document describes the FastAPI routes defined in `app/main.py` and
-`features/feed/api/routes.py`. The dev server runs at
+This document describes the FastAPI routes defined in
+`apps/api/app/main.py` and
+`apps/api/features/feed/api/routes.py`. The dev server runs at
 `http://127.0.0.1:8000` by default.
 
 ## GET /health
