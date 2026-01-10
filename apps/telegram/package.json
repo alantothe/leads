@@ -1,0 +1,7 @@
+{
+  "name": "telegram-user-service",
+  "private": true,
+  "scripts": {
+    "dev": "python3 -m uvicorn app.main:app --reload --port 8001"
+  }
+}

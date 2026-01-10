@@ -5,3 +5,6 @@ dist/
 bun.lockb
 AGENTS.md
 CLAUDE.md
+apps/telegram/sessions/
+apps/telegram/data/
+.turbo/cookies/*.cookie
