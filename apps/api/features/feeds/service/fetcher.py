@@ -52,7 +52,6 @@ def fetch_feed(feed_id: int) -> Dict:
                     translated_at = None
 
                     if detected_language and detected_language != 'en':
-                        from datetime import datetime
                         # Translate title
                         if entry.title:
                             title_translated, title_status = translator.translate_text(entry.title, source=detected_language, target='en')

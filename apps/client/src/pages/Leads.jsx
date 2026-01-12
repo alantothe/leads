@@ -9,6 +9,7 @@ import {
   useTags,
   useTranslateLeads,
 } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 const SUMMARY_SUFFIX_RE = /\s*The post\b[\s\S]*?\bfirst appeared on\b[\s\S]*$/i;
 
@@ -109,6 +110,7 @@ export default function Leads() {
     feed_id: '',
   });
   const [showTranslated, setShowTranslated] = useState(true); // Default to showing English
+  const dialog = useDialog();
   const {
     data: leads = [],
     isLoading: leadsLoading,
@@ -141,11 +143,12 @@ export default function Leads() {
     deleteLead.isPending || translateLeads.isPending || detectLanguages.isPending;
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this lead?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this lead?');
+    if (!confirmed) return;
     try {
       await deleteLead.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
@@ -168,23 +171,29 @@ export default function Leads() {
   }
 
   async function handleTranslate() {
-    if (!confirm('Translate all pending leads to English?')) return;
+    const confirmed = await dialog.confirm('Translate all pending leads to English?');
+    if (!confirmed) return;
     try {
       const result = await translateLeads.mutateAsync(filters);
-      alert(`Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`);
+      await dialog.alert(
+        `Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`,
+      );
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleDetectLanguages() {
-    if (!confirm('Re-detect language for ALL leads? This will fix any incorrect language detections.')) return;
+    const confirmed = await dialog.confirm(
+      'Re-detect language for ALL leads? This will fix any incorrect language detections.',
+    );
+    if (!confirmed) return;
     try {
       // Force re-detection for all leads (not just NULL ones)
       const result = await detectLanguages.mutateAsync(true);
-      alert(`Language detection complete!\n${result.leads_updated} leads updated`);
+      await dialog.alert(`Language detection complete!\n${result.leads_updated} leads updated`);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

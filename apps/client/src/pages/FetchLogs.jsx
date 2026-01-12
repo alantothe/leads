@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useDeleteFetchLog, useFetchLogsList, useFeeds } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function FetchLogs() {
   const [filters, setFilters] = useState({
     feed_id: '',
     status: '',
   });
+  const dialog = useDialog();
 
   const {
     data: feeds = [],
@@ -26,11 +28,12 @@ export default function FetchLogs() {
   const isMutating = deleteLog.isPending;
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this log?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this log?');
+    if (!confirmed) return;
     try {
       await deleteLog.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

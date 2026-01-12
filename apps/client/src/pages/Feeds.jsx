@@ -9,6 +9,7 @@ import {
   useToggleFeedActive,
   useUpdateFeed,
 } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function Feeds() {
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +22,7 @@ export default function Feeds() {
     fetch_interval: 30,
     is_active: 1,
   });
+  const dialog = useDialog();
 
   const {
     data: feeds = [],
@@ -61,16 +63,17 @@ export default function Feeds() {
       }
       handleCancel();
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this feed?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this feed?');
+    if (!confirmed) return;
     try {
       await deleteFeed.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
@@ -78,27 +81,30 @@ export default function Feeds() {
     try {
       await toggleFeedActive.mutateAsync(feed);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleFetch(feedId) {
     try {
       const result = await fetchFeed.mutateAsync(feedId);
-      alert(`Fetch completed!\nStatus: ${result.status}\nLeads collected: ${result.lead_count}${result.error_message ? '\nErrors: ' + result.error_message : ''}`);
+      await dialog.alert(
+        `Fetch completed!\nStatus: ${result.status}\nLeads collected: ${result.lead_count}${result.error_message ? '\nErrors: ' + result.error_message : ''}`,
+      );
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleFetchAll() {
-    if (!confirm('Fetch all active feeds? This may take a while.')) return;
+    const confirmed = await dialog.confirm('Fetch all active feeds? This may take a while.');
+    if (!confirmed) return;
     try {
       const results = await fetchAllFeeds.mutateAsync();
       const summary = results.map(r => `${r.feed_id}: ${r.lead_count} leads`).join('\n');
-      alert(`Fetched ${results.length} feeds:\n${summary}`);
+      await dialog.alert(`Fetched ${results.length} feeds:\n${summary}`);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

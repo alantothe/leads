@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCategories, useCreateSubreddit, useDeleteSubreddit, useSubreddits, useUpdateSubreddit } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function Subreddits() {
   const [showForm, setShowForm] = useState(false);
@@ -10,6 +11,7 @@ export default function Subreddits() {
     display_name: '',
     description: '',
   });
+  const dialog = useDialog();
 
   const {
     data: subreddits = [],
@@ -42,16 +44,17 @@ export default function Subreddits() {
       }
       handleCancel();
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this subreddit?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this subreddit?');
+    if (!confirmed) return;
     try {
       await deleteSubreddit.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

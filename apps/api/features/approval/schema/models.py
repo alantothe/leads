@@ -22,6 +22,8 @@ class PendingContentItem(BaseModel):
     collected_at: str
     image_url: Optional[str] = None
     link: Optional[str] = None
+    detected_language: Optional[str] = None
+    translation_status: Optional[str] = None
 
 class PendingContentResponse(BaseModel):
     total_count: int

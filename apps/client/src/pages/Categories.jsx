@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function Categories() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '' });
+  const dialog = useDialog();
 
   const {
     data: categories = [],
@@ -31,16 +33,17 @@ export default function Categories() {
       setShowForm(false);
       setEditingId(null);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this category?');
+    if (!confirmed) return;
     try {
       await deleteCategory.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

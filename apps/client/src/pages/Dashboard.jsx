@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { devApi } from '../api';
 import { useDashboardStats } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
+  const dialog = useDialog();
   const {
     data: stats,
     isLoading,
@@ -15,7 +17,7 @@ export default function Dashboard() {
   const clearFetchedMutation = useMutation({
     mutationFn: () => devApi.clearFetched(),
     onSuccess: (result) => {
-      alert(result.message);
+      dialog.alert(result.message);
     },
     onSettled: () => {
       queryClient.invalidateQueries();
@@ -25,7 +27,7 @@ export default function Dashboard() {
   const clearAllMutation = useMutation({
     mutationFn: () => devApi.clearAll(),
     onSuccess: (result) => {
-      alert(result.message);
+      dialog.alert(result.message);
     },
     onSettled: () => {
       queryClient.invalidateQueries();
@@ -35,24 +37,30 @@ export default function Dashboard() {
   const isMutating = clearFetchedMutation.isPending || clearAllMutation.isPending;
 
   async function handleClearFetched() {
-    if (!confirm('Clear all fetched content and logs (RSS, Instagram, Telegram)? This will keep categories, feeds, tags, and feed mappings.')) {
+    const confirmed = await dialog.confirm(
+      'Clear all fetched content and logs (RSS, Instagram, Telegram)? This will keep categories, feeds, tags, and feed mappings.',
+    );
+    if (!confirmed) {
       return;
     }
     try {
       await clearFetchedMutation.mutateAsync();
     } catch (error) {
-      alert(`Error: ${error.message}`);
+      await dialog.alert(`Error: ${error.message}`);
     }
   }
 
   async function handleClearAll() {
-    if (!confirm('⚠️ WARNING: Clear ALL data including categories, feeds, tags, subreddits, posts, and logs across RSS, Instagram, and Telegram? This cannot be undone!')) {
+    const confirmed = await dialog.confirm(
+      '⚠️ WARNING: Clear ALL data including categories, feeds, tags, subreddits, posts, and logs across RSS, Instagram, and Telegram? This cannot be undone!',
+    );
+    if (!confirmed) {
       return;
     }
     try {
       await clearAllMutation.mutateAsync();
     } catch (error) {
-      alert(`Error: ${error.message}`);
+      await dialog.alert(`Error: ${error.message}`);
     }
   }
 

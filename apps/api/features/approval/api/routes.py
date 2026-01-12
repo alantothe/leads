@@ -27,6 +27,8 @@ async def get_pending_content(
             """SELECT l.id,
                       COALESCE(NULLIF(l.title_translated, ''), l.title) AS title,
                       COALESCE(NULLIF(l.summary_translated, ''), l.summary) AS summary,
+                      l.detected_language,
+                      l.translation_status,
                       l.link, l.collected_at, l.image_url, f.source_name
                FROM leads l
                JOIN feeds f ON l.feed_id = f.id
@@ -43,7 +45,9 @@ async def get_pending_content(
             'source_name': lead['source_name'],
             'collected_at': lead['collected_at'],
             'image_url': lead['image_url'],
-            'link': lead['link']
+            'link': lead['link'],
+            'detected_language': lead['detected_language'],
+            'translation_status': lead['translation_status'],
         } for lead in leads])
 
     # Fetch pending Instagram posts
@@ -51,6 +55,8 @@ async def get_pending_content(
         instagram = fetch_all(
             """SELECT ip.id,
                       COALESCE(NULLIF(ip.caption_translated, ''), ip.caption) AS caption,
+                      ip.detected_language,
+                      ip.translation_status,
                       COALESCE(NULLIF(ip.thumbnail_url, ''), NULLIF(ip.media_url, '')) AS image_url,
                       ip.permalink, ip.collected_at, if.username
                FROM instagram_posts ip
@@ -68,7 +74,9 @@ async def get_pending_content(
             'source_name': f"@{post['username']}",
             'collected_at': post['collected_at'],
             'image_url': post['image_url'],
-            'link': post['permalink']
+            'link': post['permalink'],
+            'detected_language': post['detected_language'],
+            'translation_status': post['translation_status'],
         } for post in instagram])
 
     # Fetch pending Reddit posts
@@ -77,6 +85,8 @@ async def get_pending_content(
             """SELECT rp.id,
                       COALESCE(NULLIF(rp.title_translated, ''), rp.title) AS title,
                       COALESCE(NULLIF(rp.selftext_translated, ''), rp.selftext) AS selftext,
+                      rp.detected_language,
+                      rp.translation_status,
                       rp.permalink, rp.collected_at, rp.subreddit
                FROM reddit_posts rp
                WHERE rp.approval_status = 'pending'
@@ -92,7 +102,9 @@ async def get_pending_content(
             'source_name': f"r/{post['subreddit']}",
             'collected_at': post['collected_at'],
             'image_url': None,
-            'link': post['permalink']
+            'link': post['permalink'],
+            'detected_language': post['detected_language'],
+            'translation_status': post['translation_status'],
         } for post in reddit])
 
     # Fetch pending Telegram posts
@@ -100,6 +112,8 @@ async def get_pending_content(
         telegram = fetch_all(
             """SELECT tp.id,
                       COALESCE(NULLIF(tp.text_translated, ''), tp.text) AS text,
+                      tp.detected_language,
+                      tp.translation_status,
                       tp.timestamp, tf.title
                FROM telegram_posts tp
                JOIN telegram_feeds tf ON tp.telegram_feed_id = tf.id
@@ -116,7 +130,9 @@ async def get_pending_content(
             'source_name': post['title'],
             'collected_at': post['timestamp'],
             'image_url': None,
-            'link': None
+            'link': None,
+            'detected_language': post['detected_language'],
+            'translation_status': post['translation_status'],
         } for post in telegram])
 
     # Sort all items by collected_at descending

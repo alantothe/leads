@@ -193,6 +193,14 @@ button:hover,
   background: var(--bg);
 }
 
+.button.danger {
+  background: var(--danger);
+}
+
+.button.danger:hover {
+  background: var(--danger-dark);
+}
+
 .button-sm {
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
@@ -629,6 +637,63 @@ td {
 
 .error-text {
   color: hsl(0 70% 40%);
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1000;
+}
+
+.dialog {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  width: min(520px, 100%);
+  max-height: calc(100vh - 3rem);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: auto;
+}
+
+.dialog[data-tone='danger'] {
+  border-color: hsl(0 70% 70%);
+}
+
+.dialog[data-tone='warning'] {
+  border-color: hsl(40 90% 70%);
+}
+
+.dialog[data-tone='success'] {
+  border-color: hsl(140 70% 70%);
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.dialog-message {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .empty-state {

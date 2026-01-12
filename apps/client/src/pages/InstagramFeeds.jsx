@@ -9,6 +9,7 @@ import {
   useToggleInstagramFeedActive,
   useUpdateInstagramFeed,
 } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function InstagramFeeds() {
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +22,7 @@ export default function InstagramFeeds() {
     fetch_interval: 60,
     is_active: 1,
   });
+  const dialog = useDialog();
 
   const {
     data: feeds = [],
@@ -61,16 +63,17 @@ export default function InstagramFeeds() {
       }
       handleCancel();
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this Instagram feed?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this Instagram feed?');
+    if (!confirmed) return;
     try {
       await deleteFeed.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
@@ -78,27 +81,30 @@ export default function InstagramFeeds() {
     try {
       await toggleFeedActive.mutateAsync(feed);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleFetch(feedId) {
     try {
       const result = await fetchFeed.mutateAsync(feedId);
-      alert(`Fetch completed!\nStatus: ${result.status}\nPosts collected: ${result.post_count}${result.error_message ? '\nErrors: ' + result.error_message : ''}`);
+      await dialog.alert(
+        `Fetch completed!\nStatus: ${result.status}\nPosts collected: ${result.post_count}${result.error_message ? '\nErrors: ' + result.error_message : ''}`,
+      );
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleFetchAll() {
-    if (!confirm('Fetch all active Instagram feeds? This may take a while.')) return;
+    const confirmed = await dialog.confirm('Fetch all active Instagram feeds? This may take a while.');
+    if (!confirmed) return;
     try {
       const results = await fetchAllFeeds.mutateAsync();
       const summary = results.map(r => `@${r.username || r.instagram_feed_id}: ${r.post_count} posts`).join('\n');
-      alert(`Fetched ${results.length} Instagram feeds:\n${summary}`);
+      await dialog.alert(`Fetched ${results.length} Instagram feeds:\n${summary}`);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

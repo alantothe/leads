@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function Tags() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '' });
+  const dialog = useDialog();
 
   const {
     data: tags = [],
@@ -30,16 +32,17 @@ export default function Tags() {
       setShowForm(false);
       setEditingId(null);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this tag?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this tag?');
+    if (!confirmed) return;
     try {
       await deleteTag.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

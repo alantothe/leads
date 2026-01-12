@@ -8,6 +8,7 @@ import {
   useDeleteInstagramPost,
   useTranslateInstagramPosts,
 } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 export default function InstagramPosts() {
   const [filters, setFilters] = useState({
@@ -17,6 +18,7 @@ export default function InstagramPosts() {
     instagram_feed_id: '',
   });
   const [showTranslated, setShowTranslated] = useState(true); // Default to showing English
+  const dialog = useDialog();
 
   const {
     data: posts = [],
@@ -48,11 +50,12 @@ export default function InstagramPosts() {
   const isMutating = deletePost.isPending || translatePosts.isPending;
 
   async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this Instagram post?')) return;
+    const confirmed = await dialog.confirm('Are you sure you want to delete this Instagram post?');
+    if (!confirmed) return;
     try {
       await deletePost.mutateAsync(id);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 
@@ -81,12 +84,15 @@ export default function InstagramPosts() {
   }
 
   async function handleTranslate() {
-    if (!confirm('Translate all pending Instagram posts to English?')) return;
+    const confirmed = await dialog.confirm('Translate all pending Instagram posts to English?');
+    if (!confirmed) return;
     try {
       const result = await translatePosts.mutateAsync(filters);
-      alert(`Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`);
+      await dialog.alert(
+        `Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`,
+      );
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      await dialog.alert(`Error: ${err.message}`);
     }
   }
 

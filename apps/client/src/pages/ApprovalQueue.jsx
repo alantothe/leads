@@ -6,6 +6,7 @@ import {
   useRejectItem,
   useBatchApprove,
 } from '../hooks';
+import { useDialog } from '../providers/DialogProvider';
 
 const CONTENT_TYPE_LABELS = {
   lead: 'RSS Lead',
@@ -14,9 +15,74 @@ const CONTENT_TYPE_LABELS = {
   telegram_post: 'Telegram Message'
 };
 
+const LANGUAGE_NAMES = {
+  'af': 'Afrikaans',
+  'ar': 'Arabic',
+  'bg': 'Bulgarian',
+  'bn': 'Bengali',
+  'ca': 'Catalan',
+  'cs': 'Czech',
+  'cy': 'Welsh',
+  'da': 'Danish',
+  'de': 'German',
+  'el': 'Greek',
+  'en': 'English',
+  'eo': 'Esperanto',
+  'es': 'Spanish',
+  'et': 'Estonian',
+  'fa': 'Persian',
+  'fi': 'Finnish',
+  'fr': 'French',
+  'ga': 'Irish',
+  'gu': 'Gujarati',
+  'he': 'Hebrew',
+  'hi': 'Hindi',
+  'hr': 'Croatian',
+  'hu': 'Hungarian',
+  'id': 'Indonesian',
+  'is': 'Icelandic',
+  'it': 'Italian',
+  'ja': 'Japanese',
+  'kn': 'Kannada',
+  'ko': 'Korean',
+  'lt': 'Lithuanian',
+  'lv': 'Latvian',
+  'mk': 'Macedonian',
+  'ml': 'Malayalam',
+  'mr': 'Marathi',
+  'ne': 'Nepali',
+  'nl': 'Dutch',
+  'no': 'Norwegian',
+  'pa': 'Punjabi',
+  'pl': 'Polish',
+  'pt': 'Portuguese',
+  'ro': 'Romanian',
+  'ru': 'Russian',
+  'sk': 'Slovak',
+  'sl': 'Slovenian',
+  'so': 'Somali',
+  'sq': 'Albanian',
+  'sv': 'Swedish',
+  'sw': 'Swahili',
+  'ta': 'Tamil',
+  'te': 'Telugu',
+  'th': 'Thai',
+  'tl': 'Tagalog',
+  'tr': 'Turkish',
+  'uk': 'Ukrainian',
+  'ur': 'Urdu',
+  'vi': 'Vietnamese',
+  'zh': 'Chinese'
+};
+
+function getLanguageName(code) {
+  return LANGUAGE_NAMES[code] || code?.toUpperCase() || '';
+}
+
 export default function ApprovalQueue() {
   const [filter, setFilter] = useState('all'); // 'all' or content_type
   const [approvedBy, setApprovedBy] = useState('admin'); // Default user
+  const dialog = useDialog();
 
   const contentType = filter === 'all' ? null : filter;
   const {
@@ -51,7 +117,7 @@ export default function ApprovalQueue() {
         approvedBy,
       });
     } catch (err) {
-      alert(`Error approving: ${err.message}`);
+      await dialog.alert(`Error approving: ${err.message}`);
     }
   }
 
@@ -64,12 +130,13 @@ export default function ApprovalQueue() {
         notes,
       });
     } catch (err) {
-      alert(`Error rejecting: ${err.message}`);
+      await dialog.alert(`Error rejecting: ${err.message}`);
     }
   }
 
   async function handleApproveAll() {
-    if (!confirm(`Approve all ${pendingItems.length} pending items?`)) return;
+    const confirmed = await dialog.confirm(`Approve all ${pendingItems.length} pending items?`);
+    if (!confirmed) return;
 
     const items = pendingItems.map(item => ({
       content_type: item.content_type,
@@ -81,7 +148,7 @@ export default function ApprovalQueue() {
     try {
       await batchApproveMutation.mutateAsync(items);
     } catch (err) {
-      alert(`Error batch approving: ${err.message}`);
+      await dialog.alert(`Error batch approving: ${err.message}`);
     }
   }
 
@@ -153,51 +220,65 @@ export default function ApprovalQueue() {
         <div className="loading">Loading pending items...</div>
       ) : (
         <div className="approval-list">
-          {pendingItems.map(item => (
-            <div key={`${item.content_type}-${item.content_id}`} className="approval-card">
-              {item.image_url && (
-                <div className="approval-image">
-                  <img src={item.image_url} alt={item.title} />
-                </div>
-              )}
+          {pendingItems.map(item => {
+            const isTranslated = item.translation_status === 'translated';
+            const languageLabel =
+              item.detected_language && item.detected_language !== 'en'
+                ? getLanguageName(item.detected_language)
+                : null;
 
-              <div className="approval-header">
-                <span className="badge type-badge">
-                  {CONTENT_TYPE_LABELS[item.content_type]}
-                </span>
-                <span className="source-badge">{item.source_name}</span>
-              </div>
-
-              <h3>{item.title}</h3>
-              {item.summary && <p className="summary">{item.summary}</p>}
-
-              <div className="approval-meta">
-                <small>Collected: {new Date(item.collected_at).toLocaleString()}</small>
-                {item.link && (
-                  <a href={item.link} target="_blank" rel="noopener noreferrer">
-                    View Original →
-                  </a>
+            return (
+              <div key={`${item.content_type}-${item.content_id}`} className="approval-card">
+                {item.image_url && (
+                  <div className="approval-image">
+                    <img src={item.image_url} alt={item.title} />
+                  </div>
                 )}
-              </div>
 
-              <div className="approval-actions">
-                <button
-                  className="button primary"
-                  onClick={() => handleApprove(item)}
-                  disabled={isMutating}
-                >
-                  ✓ Approve
-                </button>
-                <button
-                  className="button danger"
-                  onClick={() => handleReject(item)}
-                  disabled={isMutating}
-                >
-                  ✕ Reject
-                </button>
+                <div className="approval-header">
+                  <span className="badge type-badge">
+                    {CONTENT_TYPE_LABELS[item.content_type]}
+                  </span>
+                  <span className="source-badge">{item.source_name}</span>
+                </div>
+
+                <h3>
+                  {item.title}
+                  {isTranslated && <span className="badge translation-badge">Translated</span>}
+                  {languageLabel && (
+                    <span className="badge language-badge">{languageLabel}</span>
+                  )}
+                </h3>
+                {item.summary && <p className="summary">{item.summary}</p>}
+
+                <div className="approval-meta">
+                  <small>Collected: {new Date(item.collected_at).toLocaleString()}</small>
+                  {item.link && (
+                    <a href={item.link} target="_blank" rel="noopener noreferrer">
+                      View Original →
+                    </a>
+                  )}
+                </div>
+
+                <div className="approval-actions">
+                  <button
+                    className="button primary"
+                    onClick={() => handleApprove(item)}
+                    disabled={isMutating}
+                  >
+                    ✓ Approve
+                  </button>
+                  <button
+                    className="button danger"
+                    onClick={() => handleReject(item)}
+                    disabled={isMutating}
+                  >
+                    ✕ Reject
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
