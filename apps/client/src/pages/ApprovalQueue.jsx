@@ -304,7 +304,10 @@ export default function ApprovalQueue() {
                   {item.title}
                   {isTranslated && <span className="badge translation-badge">Translated</span>}
                   {languageLabel && (
-                    <span className="badge language-badge">{languageLabel}</span>
+                    <span className="badge language-badge" data-lang-code={item.detected_language.toUpperCase()}>
+                      <span className="language-full">{languageLabel}</span>
+                      <span className="language-abbrev">{item.detected_language.toUpperCase()}</span>
+                    </span>
                   )}
                 </h3>
                 {item.summary && <p className="summary">{item.summary}</p>}

@@ -318,17 +318,24 @@ export default function Leads() {
                     <a href={lead.link} target="_blank" rel="noopener noreferrer">
                       {displayTitle}
                     </a>
-                    {isTranslated && <span className="badge translation-badge">Translated</span>}
-                    {lead.detected_language && lead.detected_language !== 'en' && (
-                      <span className="badge language-badge">{getLanguageName(lead.detected_language)}</span>
-                    )}
                   </h3>
                   <button className="button-sm danger" onClick={() => handleDelete(lead.id)} disabled={isMutating}>
                     Delete
                   </button>
                 </div>
-                <div className="lead-meta">
+
+                <div className="lead-badges">
                   <span className={`badge ${getFeedName(lead.feed_id).toLowerCase().includes('instagram') ? 'instagram' : ''}`}>{getFeedName(lead.feed_id)}</span>
+                  {isTranslated && <span className="badge translation-badge">Translated</span>}
+                  {lead.detected_language && lead.detected_language !== 'en' && (
+                    <span className="badge language-badge" data-lang-code={lead.detected_language.toUpperCase()}>
+                      <span className="language-full">{getLanguageName(lead.detected_language)}</span>
+                      <span className="language-abbrev">{lead.detected_language.toUpperCase()}</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="lead-meta">
                   {lead.author && <span>By {lead.author}</span>}
                   {lead.published && <span>{new Date(lead.published).toLocaleDateString()}</span>}
                 </div>

@@ -14,6 +14,8 @@ import { useDialog } from '../providers/DialogProvider';
 export default function Feeds() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [fetchStatus, setFetchStatus] = useState(null);
+  const [activeFetchId, setActiveFetchId] = useState(null);
   const [formData, setFormData] = useState({
     category_id: '',
     url: '',
@@ -53,6 +55,14 @@ export default function Feeds() {
     fetchFeed.isPending ||
     fetchAllFeeds.isPending;
 
+  function updateFetchStatus(tone, message) {
+    setFetchStatus({
+      tone,
+      message,
+      timestamp: new Date().toLocaleTimeString(),
+    });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     try {
@@ -86,25 +96,53 @@ export default function Feeds() {
   }
 
   async function handleFetch(feedId) {
+    const feedName = feeds.find(feed => feed.id === feedId)?.source_name || `Feed ${feedId}`;
+    setActiveFetchId(feedId);
+    updateFetchStatus('warning', `Fetching ${feedName}...`);
     try {
       const result = await fetchFeed.mutateAsync(feedId);
+      const hasErrors = result.status === 'FAILED';
+      const tone = hasErrors ? 'warning' : 'success';
+      updateFetchStatus(
+        tone,
+        `${feedName} fetch ${hasErrors ? 'finished with errors' : 'completed'}.`,
+      );
       await dialog.alert(
         `Fetch completed!\nStatus: ${result.status}\nLeads collected: ${result.lead_count}${result.error_message ? '\nErrors: ' + result.error_message : ''}`,
+        {
+          title: hasErrors ? 'Fetch completed with errors' : 'Fetch completed',
+          tone,
+        },
       );
     } catch (err) {
-      await dialog.alert(`Error: ${err.message}`);
+      updateFetchStatus('danger', `${feedName} fetch failed.`);
+      await dialog.alert(`Error: ${err.message}`, { title: 'Fetch failed', tone: 'danger' });
+    } finally {
+      setActiveFetchId(null);
     }
   }
 
   async function handleFetchAll() {
     const confirmed = await dialog.confirm('Fetch all active feeds? This may take a while.');
     if (!confirmed) return;
+    updateFetchStatus('warning', 'Fetching all active feeds...');
     try {
       const results = await fetchAllFeeds.mutateAsync();
       const summary = results.map(r => `${r.feed_id}: ${r.lead_count} leads`).join('\n');
-      await dialog.alert(`Fetched ${results.length} feeds:\n${summary}`);
+      const failures = results.filter(result => result.status === 'FAILED').length;
+      const totalLeads = results.reduce((total, result) => total + (result.lead_count || 0), 0);
+      const tone = failures > 0 ? 'warning' : 'success';
+      updateFetchStatus(
+        tone,
+        `Fetch complete for ${results.length} feeds. ${totalLeads} leads collected${failures ? `, ${failures} failed` : ''}.`,
+      );
+      await dialog.alert(`Fetched ${results.length} feeds:\n${summary}`, {
+        title: failures ? 'Fetch completed with errors' : 'Fetch completed',
+        tone,
+      });
     } catch (err) {
-      await dialog.alert(`Error: ${err.message}`);
+      updateFetchStatus('danger', 'Fetch all feeds failed.');
+      await dialog.alert(`Error: ${err.message}`, { title: 'Fetch failed', tone: 'danger' });
     }
   }
 
@@ -147,7 +185,7 @@ export default function Feeds() {
         <h1>Feeds</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="button success" onClick={handleFetchAll} disabled={isMutating}>
-            Fetch All
+            {fetchAllFeeds.isPending ? 'Fetching All...' : 'Fetch All'}
           </button>
           <button className="button" onClick={() => setShowForm(!showForm)} disabled={isMutating}>
             {showForm ? 'Cancel' : 'Add Feed'}
@@ -155,6 +193,13 @@ export default function Feeds() {
         </div>
         {feedsFetching && <span className="badge">Refreshing...</span>}
       </div>
+
+      {fetchStatus && (
+        <div className="fetch-status" data-tone={fetchStatus.tone} role="status" aria-live="polite">
+          <span>{fetchStatus.message}</span>
+          <span className="fetch-status-time">{fetchStatus.timestamp}</span>
+        </div>
+      )}
 
       {error && <div className="error">{error.message}</div>}
 
@@ -274,7 +319,7 @@ export default function Feeds() {
                 </td>
                 <td className="actions">
                   <button className="button-sm success" onClick={() => handleFetch(feed.id)} disabled={isMutating}>
-                    Fetch
+                    {fetchFeed.isPending && activeFetchId === feed.id ? 'Fetching...' : 'Fetch'}
                   </button>
                   <button className="button-sm" onClick={() => handleEdit(feed)}>
                     Edit

@@ -689,6 +689,35 @@ td {
   color: var(--text-muted);
 }
 
+/* Lead Badges Section */
+.lead-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+/* Language Badge Responsive Behavior */
+.language-badge .language-full {
+  display: inline;
+}
+
+.language-badge .language-abbrev {
+  display: none;
+}
+
+/* Mobile: Show abbreviated language codes */
+@media (max-width: 640px) {
+  .language-badge .language-full {
+    display: none;
+  }
+
+  .language-badge .language-abbrev {
+    display: inline;
+  }
+}
+
 /* Filters */
 .filters {
   margin-bottom: 2rem;
@@ -733,6 +762,45 @@ td {
 
 .error-text {
   color: var(--danger);
+}
+
+.fetch-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.fetch-status[data-tone='warning'] {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.fetch-status[data-tone='success'] {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.fetch-status[data-tone='danger'] {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.fetch-status-time {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .dialog-backdrop {

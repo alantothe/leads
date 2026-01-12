@@ -11,6 +11,71 @@ import {
 const DASHBOARD_FETCH_LIMIT = 1000;
 const SUMMARY_SUFFIX_RE = /\s*The post\b[\s\S]*?\bfirst appeared on\b[\s\S]*$/i;
 
+// Language code to full name mapping (ISO 639-1)
+const LANGUAGE_NAMES = {
+  'af': 'Afrikaans',
+  'ar': 'Arabic',
+  'bg': 'Bulgarian',
+  'bn': 'Bengali',
+  'ca': 'Catalan',
+  'cs': 'Czech',
+  'cy': 'Welsh',
+  'da': 'Danish',
+  'de': 'German',
+  'el': 'Greek',
+  'en': 'English',
+  'eo': 'Esperanto',
+  'es': 'Spanish',
+  'et': 'Estonian',
+  'fa': 'Persian',
+  'fi': 'Finnish',
+  'fr': 'French',
+  'ga': 'Irish',
+  'gu': 'Gujarati',
+  'he': 'Hebrew',
+  'hi': 'Hindi',
+  'hr': 'Croatian',
+  'hu': 'Hungarian',
+  'id': 'Indonesian',
+  'is': 'Icelandic',
+  'it': 'Italian',
+  'ja': 'Japanese',
+  'kn': 'Kannada',
+  'ko': 'Korean',
+  'lt': 'Lithuanian',
+  'lv': 'Latvian',
+  'mk': 'Macedonian',
+  'ml': 'Malayalam',
+  'mr': 'Marathi',
+  'ne': 'Nepali',
+  'nl': 'Dutch',
+  'no': 'Norwegian',
+  'pa': 'Punjabi',
+  'pl': 'Polish',
+  'pt': 'Portuguese',
+  'ro': 'Romanian',
+  'ru': 'Russian',
+  'sk': 'Slovak',
+  'sl': 'Slovenian',
+  'so': 'Somali',
+  'sq': 'Albanian',
+  'sv': 'Swedish',
+  'sw': 'Swahili',
+  'ta': 'Tamil',
+  'te': 'Telugu',
+  'th': 'Thai',
+  'tl': 'Tagalog',
+  'tr': 'Turkish',
+  'uk': 'Ukrainian',
+  'ur': 'Urdu',
+  'vi': 'Vietnamese',
+  'zh': 'Chinese'
+};
+
+function getLanguageName(code) {
+  return LANGUAGE_NAMES[code] || code?.toUpperCase() || '';
+}
+
 function cleanLeadSummary(summary) {
   if (!summary) return '';
 
@@ -157,7 +222,7 @@ export default function Dashboard() {
     const summary = cleanLeadSummary(rawSummary);
     const isTranslated = lead.translation_status === 'translated';
     const languageLabel = lead.detected_language && lead.detected_language !== 'en'
-      ? lead.detected_language.toUpperCase()
+      ? getLanguageName(lead.detected_language)
       : null;
 
     const categoryName =
@@ -179,14 +244,23 @@ export default function Dashboard() {
             ) : (
               displayTitle
             )}
-            {isTranslated && <span className="badge translation-badge">Translated</span>}
-            {languageLabel && <span className="badge language-badge">{languageLabel}</span>}
           </h3>
-          <span className="badge">Article</span>
         </div>
-        <div className="lead-meta">
+
+        <div className="lead-badges">
+          <span className="badge">Article</span>
           <span className="badge">{categoryName}</span>
           <span className="badge">{feedNames.get(lead.feed_id) || 'Unknown Feed'}</span>
+          {isTranslated && <span className="badge translation-badge">Translated</span>}
+          {languageLabel && (
+            <span className="badge language-badge" data-lang-code={lead.detected_language.toUpperCase()}>
+              <span className="language-full">{languageLabel}</span>
+              <span className="language-abbrev">{lead.detected_language.toUpperCase()}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="lead-meta">
           {lead.author && <span>By {lead.author}</span>}
           <span>
             {lead.published
@@ -211,7 +285,7 @@ export default function Dashboard() {
       : post.caption;
     const isTranslated = post.translation_status === 'translated';
     const languageLabel = post.detected_language && post.detected_language !== 'en'
-      ? post.detected_language.toUpperCase()
+      ? getLanguageName(post.detected_language)
       : null;
     const mediaUrl = post.media_url || post.thumbnail_url;
     const showVideo = post.media_type === 'video' && post.media_url;
@@ -234,16 +308,25 @@ export default function Dashboard() {
             ) : (
               usernameLabel
             )}
-            {isTranslated && <span className="badge translation-badge">Translated</span>}
-            {languageLabel && <span className="badge language-badge">{languageLabel}</span>}
           </h3>
-          <span className="badge instagram">Instagram Post</span>
         </div>
-        <div className="lead-meta">
+
+        <div className="lead-badges">
+          <span className="badge instagram">Instagram Post</span>
           <span className="badge">{categoryName}</span>
           <span className="badge">
             {instagramFeedNames.get(post.instagram_feed_id) || 'Unknown Feed'}
           </span>
+          {isTranslated && <span className="badge translation-badge">Translated</span>}
+          {languageLabel && (
+            <span className="badge language-badge" data-lang-code={post.detected_language.toUpperCase()}>
+              <span className="language-full">{languageLabel}</span>
+              <span className="language-abbrev">{post.detected_language.toUpperCase()}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="lead-meta">
           <span>
             {post.posted_at
               ? `Posted: ${formatDate(post.posted_at)}`
