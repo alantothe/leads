@@ -22,6 +22,7 @@ class FeedEntry(BaseModel):
     published: Optional[str] = None
     updated: Optional[str] = None
     author: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class FeedResponse(BaseModel):

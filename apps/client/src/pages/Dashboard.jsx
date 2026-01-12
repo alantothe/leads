@@ -41,7 +41,7 @@ export default function Dashboard() {
   }
 
   async function handleClearFetched() {
-    if (!confirm('Clear all leads and fetch logs? This will keep categories, feeds, and tags.')) {
+    if (!confirm('Clear all fetched content and logs (RSS, Instagram, Telegram)? This will keep categories, feeds, tags, and feed mappings.')) {
       return;
     }
     try {
@@ -54,7 +54,7 @@ export default function Dashboard() {
   }
 
   async function handleClearAll() {
-    if (!confirm('⚠️ WARNING: Clear ALL data including categories, feeds, tags, leads, and logs? This cannot be undone!')) {
+    if (!confirm('⚠️ WARNING: Clear ALL data including categories, feeds, tags, subreddits, posts, and logs across RSS, Instagram, and Telegram? This cannot be undone!')) {
       return;
     }
     try {
@@ -106,7 +106,7 @@ export default function Dashboard() {
         <p className="dev-warning">⚠️ Use these tools carefully - they will delete data!</p>
         <div className="dev-actions">
           <button className="button-sm warning" onClick={handleClearFetched}>
-            Clear Fetched Data (Leads & Logs)
+            Clear Fetched Data (Posts & Logs)
           </button>
           <button className="button-sm danger" onClick={handleClearAll}>
             Clear All Data

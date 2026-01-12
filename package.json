@@ -3,9 +3,13 @@
   "packageManager": "bun@1.3.0",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "docker compose up -d && turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "docker:start": "docker compose up -d",
+    "docker:stop": "docker compose down",
+    "docker:logs": "docker compose logs -f libretranslate",
+    "docker:restart": "docker compose restart libretranslate"
   },
   "workspaces": [
     "apps/*"

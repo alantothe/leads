@@ -132,3 +132,98 @@ export const instagramPostsApi = {
   getById: (id) => request(`/instagram-feeds/posts/${id}`),
   delete: (id) => request(`/instagram-feeds/posts/${id}`, { method: 'DELETE' }),
 };
+
+// Subreddits API
+export const subredditsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/subreddits${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/subreddits/${id}`),
+  create: (data) => request('/subreddits', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/subreddits/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/subreddits/${id}`, { method: 'DELETE' }),
+};
+
+// Translation API
+export const translationApi = {
+  translateBatch: (data) => request('/translate/batch', { method: 'POST', body: JSON.stringify(data) }),
+  translateLeads: (params = {}) => {
+    // Filter out empty values to avoid sending empty strings for integer fields
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([_, value]) => value !== '' && value != null)
+    );
+    const query = new URLSearchParams(filteredParams).toString();
+    return request(`/translate/leads${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+  translateInstagramPosts: (params = {}) => {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([_, value]) => value !== '' && value != null)
+    );
+    const query = new URLSearchParams(filteredParams).toString();
+    return request(`/translate/instagram-posts${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+  translateRedditPosts: (params = {}) => {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([_, value]) => value !== '' && value != null)
+    );
+    const query = new URLSearchParams(filteredParams).toString();
+    return request(`/translate/reddit-posts${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+  translateTelegramPosts: (params = {}) => {
+    const filteredParams = Object.fromEntries(
+      Object.entries(params).filter(([_, value]) => value !== '' && value != null)
+    );
+    const query = new URLSearchParams(filteredParams).toString();
+    return request(`/translate/telegram-posts${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+  getStats: () => request('/translate/stats'),
+  detectMissingLanguages: (force = false) => {
+    const query = force ? '?force=true' : '';
+    return request(`/translate/detect-languages${query}`, { method: 'POST' });
+  },
+};
+
+// Approval API
+export const approvalApi = {
+  getPending: (contentType = null, limit = 100, offset = 0) => {
+    const params = new URLSearchParams({ limit, offset });
+    if (contentType) params.append('content_type', contentType);
+    return request(`/approval/pending?${params}`);
+  },
+
+  approve: (contentType, contentId, approvedBy, notes = null) => {
+    return request('/approval/approve', {
+      method: 'POST',
+      body: JSON.stringify({
+        content_type: contentType,
+        content_id: contentId,
+        status: 'approved',
+        approved_by: approvedBy,
+        approval_notes: notes
+      })
+    });
+  },
+
+  reject: (contentType, contentId, approvedBy, notes = null) => {
+    return request('/approval/approve', {
+      method: 'POST',
+      body: JSON.stringify({
+        content_type: contentType,
+        content_id: contentId,
+        status: 'rejected',
+        approved_by: approvedBy,
+        approval_notes: notes
+      })
+    });
+  },
+
+  batchApprove: (items) => {
+    return request('/approval/approve/batch', {
+      method: 'POST',
+      body: JSON.stringify({ items })
+    });
+  },
+
+  getStats: () => request('/approval/stats')
+};

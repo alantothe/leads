@@ -1,0 +1,242 @@
+from fastapi import APIRouter, HTTPException
+from typing import Optional
+from lib.database import fetch_all, fetch_one, execute_query
+from features.approval.schema.models import (
+    ApprovalRequest, BatchApprovalRequest,
+    PendingContentItem, PendingContentResponse
+)
+from datetime import datetime
+
+router = APIRouter(prefix="/approval", tags=["approval"])
+
+@router.get("/pending", response_model=PendingContentResponse)
+async def get_pending_content(
+    content_type: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0
+):
+    """
+    Get all pending content across all types, or filter by content_type.
+    Returns unified list with content_type identifier.
+    """
+    items = []
+
+    # Fetch pending leads
+    if not content_type or content_type == 'lead':
+        leads = fetch_all(
+            """SELECT l.id,
+                      COALESCE(NULLIF(l.title_translated, ''), l.title) AS title,
+                      COALESCE(NULLIF(l.summary_translated, ''), l.summary) AS summary,
+                      l.link, l.collected_at, l.image_url, f.source_name
+               FROM leads l
+               JOIN feeds f ON l.feed_id = f.id
+               WHERE l.approval_status = 'pending'
+               ORDER BY l.collected_at DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        items.extend([{
+            'content_type': 'lead',
+            'content_id': lead['id'],
+            'title': lead['title'],
+            'summary': lead['summary'],
+            'source_name': lead['source_name'],
+            'collected_at': lead['collected_at'],
+            'image_url': lead['image_url'],
+            'link': lead['link']
+        } for lead in leads])
+
+    # Fetch pending Instagram posts
+    if not content_type or content_type == 'instagram_post':
+        instagram = fetch_all(
+            """SELECT ip.id,
+                      COALESCE(NULLIF(ip.caption_translated, ''), ip.caption) AS caption,
+                      COALESCE(NULLIF(ip.thumbnail_url, ''), NULLIF(ip.media_url, '')) AS image_url,
+                      ip.permalink, ip.collected_at, if.username
+               FROM instagram_posts ip
+               JOIN instagram_feeds if ON ip.instagram_feed_id = if.id
+               WHERE ip.approval_status = 'pending'
+               ORDER BY ip.collected_at DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        items.extend([{
+            'content_type': 'instagram_post',
+            'content_id': post['id'],
+            'title': post['caption'][:100] if post['caption'] else 'No caption',
+            'summary': post['caption'],
+            'source_name': f"@{post['username']}",
+            'collected_at': post['collected_at'],
+            'image_url': post['image_url'],
+            'link': post['permalink']
+        } for post in instagram])
+
+    # Fetch pending Reddit posts
+    if not content_type or content_type == 'reddit_post':
+        reddit = fetch_all(
+            """SELECT rp.id,
+                      COALESCE(NULLIF(rp.title_translated, ''), rp.title) AS title,
+                      COALESCE(NULLIF(rp.selftext_translated, ''), rp.selftext) AS selftext,
+                      rp.permalink, rp.collected_at, rp.subreddit
+               FROM reddit_posts rp
+               WHERE rp.approval_status = 'pending'
+               ORDER BY rp.collected_at DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        items.extend([{
+            'content_type': 'reddit_post',
+            'content_id': post['id'],
+            'title': post['title'],
+            'summary': post['selftext'][:200] if post['selftext'] else None,
+            'source_name': f"r/{post['subreddit']}",
+            'collected_at': post['collected_at'],
+            'image_url': None,
+            'link': post['permalink']
+        } for post in reddit])
+
+    # Fetch pending Telegram posts
+    if not content_type or content_type == 'telegram_post':
+        telegram = fetch_all(
+            """SELECT tp.id,
+                      COALESCE(NULLIF(tp.text_translated, ''), tp.text) AS text,
+                      tp.timestamp, tf.title
+               FROM telegram_posts tp
+               JOIN telegram_feeds tf ON tp.telegram_feed_id = tf.id
+               WHERE tp.approval_status = 'pending'
+               ORDER BY tp.timestamp DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        items.extend([{
+            'content_type': 'telegram_post',
+            'content_id': post['id'],
+            'title': post['text'][:100] if post['text'] else 'No text',
+            'summary': post['text'],
+            'source_name': post['title'],
+            'collected_at': post['timestamp'],
+            'image_url': None,
+            'link': None
+        } for post in telegram])
+
+    # Sort all items by collected_at descending
+    items.sort(key=lambda x: x['collected_at'], reverse=True)
+
+    return {
+        'total_count': len(items),
+        'items': items[:limit]
+    }
+
+@router.post("/approve")
+async def approve_content(request: ApprovalRequest):
+    """Approve or reject a single content item."""
+    table_map = {
+        'lead': 'leads',
+        'instagram_post': 'instagram_posts',
+        'reddit_post': 'reddit_posts',
+        'telegram_post': 'telegram_posts'
+    }
+
+    table = table_map.get(request.content_type)
+    if not table:
+        raise HTTPException(400, f"Invalid content_type: {request.content_type}")
+
+    execute_query(
+        f"""UPDATE {table}
+           SET approval_status = ?,
+               approved_by = ?,
+               approved_at = ?,
+               approval_notes = ?
+           WHERE id = ?""",
+        (request.status, request.approved_by,
+         datetime.utcnow().isoformat(), request.approval_notes,
+         request.content_id)
+    )
+
+    return {"message": f"Content {request.status}", "content_id": request.content_id}
+
+@router.post("/approve/batch")
+async def batch_approve_content(request: BatchApprovalRequest):
+    """Approve or reject multiple content items at once."""
+    results = []
+
+    for item in request.items:
+        try:
+            table_map = {
+                'lead': 'leads',
+                'instagram_post': 'instagram_posts',
+                'reddit_post': 'reddit_posts',
+                'telegram_post': 'telegram_posts'
+            }
+
+            table = table_map.get(item.content_type)
+            if not table:
+                results.append({
+                    'content_id': item.content_id,
+                    'success': False,
+                    'error': f"Invalid content_type: {item.content_type}"
+                })
+                continue
+
+            execute_query(
+                f"""UPDATE {table}
+                   SET approval_status = ?,
+                       approved_by = ?,
+                       approved_at = ?,
+                       approval_notes = ?
+                   WHERE id = ?""",
+                (item.status, item.approved_by,
+                 datetime.utcnow().isoformat(), item.approval_notes,
+                 item.content_id)
+            )
+
+            results.append({
+                'content_id': item.content_id,
+                'success': True
+            })
+        except Exception as e:
+            results.append({
+                'content_id': item.content_id,
+                'success': False,
+                'error': str(e)
+            })
+
+    return {
+        'total': len(request.items),
+        'successful': sum(1 for r in results if r['success']),
+        'failed': sum(1 for r in results if not r['success']),
+        'results': results
+    }
+
+@router.get("/stats")
+async def get_approval_stats():
+    """Get counts of pending/approved/rejected items by type."""
+    stats = {}
+    tables = {
+        'leads': 'lead',
+        'instagram_posts': 'instagram_post',
+        'reddit_posts': 'reddit_post',
+        'telegram_posts': 'telegram_post'
+    }
+
+    for table, content_type in tables.items():
+        pending = fetch_one(
+            f"SELECT COUNT(*) as count FROM {table} WHERE approval_status = 'pending'",
+            ()
+        )
+        approved = fetch_one(
+            f"SELECT COUNT(*) as count FROM {table} WHERE approval_status = 'approved'",
+            ()
+        )
+        rejected = fetch_one(
+            f"SELECT COUNT(*) as count FROM {table} WHERE approval_status = 'rejected'",
+            ()
+        )
+
+        stats[content_type] = {
+            'pending': pending['count'] if pending else 0,
+            'approved': approved['count'] if approved else 0,
+            'rejected': rejected['count'] if rejected else 0
+        }
+
+    return stats

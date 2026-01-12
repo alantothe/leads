@@ -110,7 +110,7 @@ def get_instagram_posts(
     query = """
         SELECT ip.* FROM instagram_posts ip
         JOIN instagram_feeds if ON ip.instagram_feed_id = if.id
-        WHERE 1=1
+        WHERE ip.approval_status = 'approved'
     """
     params = []
 

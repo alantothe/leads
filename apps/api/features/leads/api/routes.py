@@ -71,6 +71,9 @@ def get_leads(
         search_param = f"%{search}%"
         params.extend([search_param, search_param, search_param])
 
+    # Always filter by approved status
+    conditions.append("l.approval_status = 'approved'")
+
     if joins:
         query += " " + " ".join(set(joins))
 
@@ -97,7 +100,7 @@ def get_leads_by_feed(
         raise HTTPException(status_code=404, detail="Feed not found")
 
     leads = fetch_all(
-        "SELECT * FROM leads WHERE feed_id = ? ORDER BY published DESC LIMIT ? OFFSET ?",
+        "SELECT * FROM leads WHERE feed_id = ? AND approval_status = 'approved' ORDER BY published DESC LIMIT ? OFFSET ?",
         (feed_id, limit, offset)
     )
     return [LeadResponse(**lead) for lead in leads]
@@ -115,7 +118,7 @@ def get_leads_by_tag(
            JOIN feeds f ON l.feed_id = f.id
            JOIN feed_tag_map ftm ON f.id = ftm.feed_id
            JOIN feed_tags ft ON ftm.tag_id = ft.id
-           WHERE ft.name = ?
+           WHERE ft.name = ? AND l.approval_status = 'approved'
            ORDER BY l.published DESC
            LIMIT ? OFFSET ?""",
         (tag_name, limit, offset)
@@ -134,7 +137,7 @@ def get_leads_by_category(
         """SELECT l.* FROM leads l
            JOIN feeds f ON l.feed_id = f.id
            JOIN categories c ON f.category_id = c.id
-           WHERE c.name = ?
+           WHERE c.name = ? AND l.approval_status = 'approved'
            ORDER BY l.published DESC
            LIMIT ? OFFSET ?""",
         (category_name, limit, offset)

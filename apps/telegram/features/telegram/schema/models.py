@@ -77,3 +77,29 @@ class ApprovedChatCreateRequest(BaseModel):
 
 class ApprovedChatsResponse(BaseModel):
     chats: List[ApprovedChat]
+
+
+class TelegramPostResponse(BaseModel):
+    """Complete response model for telegram_posts from database."""
+    id: int
+    telegram_feed_id: int
+    message_id: int
+    text: Optional[str] = None
+    timestamp: str
+    sender_id: Optional[int] = None
+    sender_name: Optional[str] = None
+    sender_username: Optional[str] = None
+    sender_type: Optional[str] = None
+    media_type: Optional[str] = None
+    media_file_name: Optional[str] = None
+    collected_at: str
+    # Translation fields
+    text_translated: Optional[str] = None
+    detected_language: Optional[str] = None
+    translation_status: Optional[str] = None
+    translated_at: Optional[str] = None
+    # Approval fields
+    approval_status: Optional[str] = None
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    approval_notes: Optional[str] = None

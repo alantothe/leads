@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Dict, List
 from features.feed.service.parser import parse_feed
 from lib.database import fetch_one, execute_query
+from utils.html_cleaning import clean_feed_content
+from features.translation.service.translator import get_translator
 
 
 def fetch_feed(feed_id: int) -> Dict:
@@ -17,6 +19,9 @@ def fetch_feed(feed_id: int) -> Dict:
         # Parse the RSS feed
         feed_data = parse_feed(feed["url"])
 
+        # Get translator for language detection
+        translator = get_translator()
+
         lead_count = 0
         errors = []
 
@@ -30,14 +35,59 @@ def fetch_feed(feed_id: int) -> Dict:
                 )
 
                 if not existing:
+                    # Clean HTML from summary and content before storing
+                    clean_summary = clean_feed_content(entry.summary)
+                    clean_content = clean_feed_content(entry.content)
+
+                    # Detect language immediately - use longest available text for accuracy
+                    # Prefer summary > content > title (more text = better detection)
+                    text_for_detection = clean_summary or clean_content or entry.title
+                    detected_language = translator.detect_language(text_for_detection)
+
+                    # Auto-translate if not English
+                    title_translated = None
+                    summary_translated = None
+                    content_translated = None
+                    translation_status = 'already_english'
+                    translated_at = None
+
+                    if detected_language and detected_language != 'en':
+                        from datetime import datetime
+                        # Translate title
+                        if entry.title:
+                            title_translated, title_status = translator.translate_text(entry.title, source=detected_language, target='en')
+
+                        # Translate summary
+                        if clean_summary:
+                            summary_translated, summary_status = translator.translate_text(clean_summary, source=detected_language, target='en')
+
+                        # Translate content
+                        if clean_content:
+                            content_translated, content_status = translator.translate_text(clean_content, source=detected_language, target='en')
+
+                        translation_status = 'translated'
+                        translated_at = datetime.utcnow().isoformat()
+
                     execute_query(
                         """INSERT INTO leads
-                           (feed_id, guid, title, link, author, summary, content, published)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                           (feed_id, guid, title, link, author, summary, content, published,
+                            detected_language, translation_status, image_url, approval_status,
+                            title_translated, summary_translated, content_translated, translated_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         (feed_id, entry.id, entry.title, entry.link, entry.author,
-                         entry.summary, entry.content, entry.published)
+                         clean_summary, clean_content, entry.published,
+                         detected_language, translation_status, entry.image_url, 'pending',
+                         title_translated, summary_translated, content_translated, translated_at)
                     )
                     lead_count += 1
+                elif entry.image_url:
+                    execute_query(
+                        """UPDATE leads
+                           SET image_url = ?
+                           WHERE feed_id = ? AND guid = ?
+                             AND (image_url IS NULL OR image_url = '')""",
+                        (entry.image_url, feed_id, entry.id)
+                    )
             except Exception as e:
                 errors.append(f"Entry '{entry.title}': {str(e)}")
 

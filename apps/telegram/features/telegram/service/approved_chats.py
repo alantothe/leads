@@ -12,6 +12,7 @@ class ApprovedChatRecord:
     chat_id: int
     title: str
     type: str
+    category_id: int = 2  # Default to AI category
 
 
 def _service_root() -> Path:
@@ -19,7 +20,8 @@ def _service_root() -> Path:
 
 
 def _default_db_path() -> Path:
-    return _service_root() / "data" / "telegram.db"
+    # Point to the shared leads.db in apps/api
+    return _service_root().parent.parent / "api" / "leads.db"
 
 
 class ApprovedChatStore:
@@ -34,28 +36,21 @@ class ApprovedChatStore:
         return conn
 
     def _ensure_schema(self) -> None:
-        self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS approved_chats (
-                    chat_id INTEGER PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    type TEXT NOT NULL
-                )
-                """
-            )
+        # Schema is now managed by init_db.py in the main API
+        # Just ensure the database file exists
+        pass
 
     def list(self) -> List[ApprovedChatRecord]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT chat_id, title, type FROM approved_chats ORDER BY chat_id"
+                "SELECT chat_id, title, type, category_id FROM telegram_feeds WHERE is_active = 1 ORDER BY chat_id"
             ).fetchall()
         return [
             ApprovedChatRecord(
                 chat_id=row["chat_id"],
                 title=row["title"],
                 type=row["type"],
+                category_id=row["category_id"],
             )
             for row in rows
         ]
@@ -63,7 +58,7 @@ class ApprovedChatStore:
     def get(self, chat_id: int) -> Optional[ApprovedChatRecord]:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT chat_id, title, type FROM approved_chats WHERE chat_id = ?",
+                "SELECT chat_id, title, type, category_id FROM telegram_feeds WHERE chat_id = ?",
                 (chat_id,),
             ).fetchone()
         if row is None:
@@ -72,24 +67,25 @@ class ApprovedChatStore:
             chat_id=row["chat_id"],
             title=row["title"],
             type=row["type"],
+            category_id=row["category_id"],
         )
 
     def upsert(self, record: ApprovedChatRecord) -> bool:
         with self._lock:
             with self._connect() as conn:
                 existing = conn.execute(
-                    "SELECT 1 FROM approved_chats WHERE chat_id = ?",
+                    "SELECT 1 FROM telegram_feeds WHERE chat_id = ?",
                     (record.chat_id,),
                 ).fetchone()
                 if existing:
                     conn.execute(
-                        "UPDATE approved_chats SET title = ?, type = ? WHERE chat_id = ?",
-                        (record.title, record.type, record.chat_id),
+                        "UPDATE telegram_feeds SET title = ?, type = ?, category_id = ? WHERE chat_id = ?",
+                        (record.title, record.type, record.category_id, record.chat_id),
                     )
                     return False
                 conn.execute(
-                    "INSERT INTO approved_chats (chat_id, title, type) VALUES (?, ?, ?)",
-                    (record.chat_id, record.title, record.type),
+                    "INSERT INTO telegram_feeds (chat_id, title, type, category_id, is_active) VALUES (?, ?, ?, ?, 1)",
+                    (record.chat_id, record.title, record.type, record.category_id),
                 )
                 return True
 
@@ -97,7 +93,7 @@ class ApprovedChatStore:
         with self._lock:
             with self._connect() as conn:
                 cursor = conn.execute(
-                    "DELETE FROM approved_chats WHERE chat_id = ?",
+                    "DELETE FROM telegram_feeds WHERE chat_id = ?",
                     (chat_id,),
                 )
                 return cursor.rowcount > 0

@@ -6,3 +6,4 @@ python-dateutil
 aiosqlite
 requests
 python-dotenv
+libretranslate==1.5.7

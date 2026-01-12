@@ -49,6 +49,16 @@ class InstagramPostResponse(BaseModel):
     posted_at: Optional[str] = None
     permalink: Optional[str] = None
     collected_at: str
+    # Translation fields
+    caption_translated: Optional[str] = None
+    detected_language: Optional[str] = None
+    translation_status: Optional[str] = None
+    translated_at: Optional[str] = None
+    # Approval fields
+    approval_status: Optional[str] = None
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+    approval_notes: Optional[str] = None
 
 # Instagram API Response Models (internal)
 class InstagramPost(BaseModel):

@@ -1,5 +1,97 @@
 import { useEffect, useState } from 'react';
-import { leadsApi, feedsApi, categoriesApi, tagsApi } from '../api';
+import { Link } from 'react-router-dom';
+import { leadsApi, feedsApi, categoriesApi, tagsApi, translationApi } from '../api';
+
+const SUMMARY_SUFFIX_RE = /\s*The post\b[\s\S]*?\bfirst appeared on\b[\s\S]*$/i;
+
+// Language code to full name mapping (ISO 639-1)
+const LANGUAGE_NAMES = {
+  'af': 'Afrikaans',
+  'ar': 'Arabic',
+  'bg': 'Bulgarian',
+  'bn': 'Bengali',
+  'ca': 'Catalan',
+  'cs': 'Czech',
+  'cy': 'Welsh',
+  'da': 'Danish',
+  'de': 'German',
+  'el': 'Greek',
+  'en': 'English',
+  'eo': 'Esperanto',
+  'es': 'Spanish',
+  'et': 'Estonian',
+  'fa': 'Persian',
+  'fi': 'Finnish',
+  'fr': 'French',
+  'ga': 'Irish',
+  'gu': 'Gujarati',
+  'he': 'Hebrew',
+  'hi': 'Hindi',
+  'hr': 'Croatian',
+  'hu': 'Hungarian',
+  'id': 'Indonesian',
+  'is': 'Icelandic',
+  'it': 'Italian',
+  'ja': 'Japanese',
+  'kn': 'Kannada',
+  'ko': 'Korean',
+  'lt': 'Lithuanian',
+  'lv': 'Latvian',
+  'mk': 'Macedonian',
+  'ml': 'Malayalam',
+  'mr': 'Marathi',
+  'ne': 'Nepali',
+  'nl': 'Dutch',
+  'no': 'Norwegian',
+  'pa': 'Punjabi',
+  'pl': 'Polish',
+  'pt': 'Portuguese',
+  'ro': 'Romanian',
+  'ru': 'Russian',
+  'sk': 'Slovak',
+  'sl': 'Slovenian',
+  'so': 'Somali',
+  'sq': 'Albanian',
+  'sv': 'Swedish',
+  'sw': 'Swahili',
+  'ta': 'Tamil',
+  'te': 'Telugu',
+  'th': 'Thai',
+  'tl': 'Tagalog',
+  'tr': 'Turkish',
+  'uk': 'Ukrainian',
+  'ur': 'Urdu',
+  'vi': 'Vietnamese',
+  'zh': 'Chinese'
+};
+
+function getLanguageName(code) {
+  return LANGUAGE_NAMES[code] || code?.toUpperCase() || '';
+}
+
+function cleanLeadSummary(summary) {
+  if (!summary) return '';
+
+  if (typeof DOMParser === 'undefined') {
+    return summary
+      .replace(/<[^>]*>/g, ' ')
+      .replace(SUMMARY_SUFFIX_RE, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  const doc = new DOMParser().parseFromString(summary, 'text/html');
+  const paragraphs = Array.from(doc.body.querySelectorAll('p'))
+    .map(p => (p.textContent || '').trim())
+    .filter(Boolean);
+
+  const text = paragraphs.length ? paragraphs[0] : (doc.body.textContent || '');
+
+  return text
+    .replace(SUMMARY_SUFFIX_RE, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export default function Leads() {
   const [leads, setLeads] = useState([]);
@@ -14,6 +106,9 @@ export default function Leads() {
     tag: '',
     feed_id: '',
   });
+  const [showTranslated, setShowTranslated] = useState(true); // Default to showing English
+  const [translating, setTranslating] = useState(false);
+  const [detectingLanguages, setDetectingLanguages] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -85,10 +180,42 @@ export default function Leads() {
     });
   }
 
+  async function handleTranslate() {
+    if (!confirm('Translate all pending leads to English?')) return;
+    try {
+      setTranslating(true);
+      const result = await translationApi.translateLeads(filters);
+      alert(`Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`);
+      loadLeads(); // Reload to show translated content
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setTranslating(false);
+    }
+  }
+
+  async function handleDetectLanguages() {
+    if (!confirm('Re-detect language for ALL leads? This will fix any incorrect language detections.')) return;
+    try {
+      setDetectingLanguages(true);
+      // Force re-detection for all leads (not just NULL ones)
+      const result = await translationApi.detectMissingLanguages(true);
+      alert(`Language detection complete!\n${result.leads_updated} leads updated`);
+      loadLeads(); // Reload to show detected languages
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setDetectingLanguages(false);
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Leads</h1>
+        <div className="page-actions">
+          <Link to="/feeds" className="button secondary">Manage RSS Feeds</Link>
+        </div>
         <div className="lead-count">{leads.length} leads found</div>
       </div>
 
@@ -148,35 +275,95 @@ export default function Leads() {
         </button>
       </div>
 
+      <div className="translation-controls card">
+        <div className="translation-header">
+          <h3>Translation</h3>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="button secondary"
+              onClick={handleDetectLanguages}
+              disabled={detectingLanguages}
+            >
+              {detectingLanguages ? 'Detecting...' : 'Detect Languages'}
+            </button>
+            <button
+              className="button primary"
+              onClick={handleTranslate}
+              disabled={translating}
+            >
+              {translating ? 'Translating...' : 'Translate Pending Leads'}
+            </button>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={showTranslated}
+              onChange={(e) => setShowTranslated(e.target.checked)}
+            />
+            Show English (translated when available)
+          </label>
+        </div>
+      </div>
+
       {loading ? (
         <div className="loading">Loading leads...</div>
       ) : (
         <div className="leads-list">
-          {leads.map((lead) => (
-            <div key={lead.id} className="lead-card">
-              <div className="lead-header">
-                <h3>
-                  <a href={lead.link} target="_blank" rel="noopener noreferrer">
-                    {lead.title}
-                  </a>
-                </h3>
-                <button className="button-sm danger" onClick={() => handleDelete(lead.id)}>
-                  Delete
-                </button>
+          {leads.map((lead) => {
+            // Determine which text to show based on toggle and availability
+            const displayTitle = showTranslated && lead.title_translated
+              ? lead.title_translated
+              : lead.title;
+
+            const rawSummary = showTranslated && lead.summary_translated
+              ? lead.summary_translated
+              : lead.summary;
+
+            const summary = cleanLeadSummary(rawSummary);
+
+            const isTranslated = lead.translation_status === 'translated';
+            const isEnglish = lead.translation_status === 'already_english';
+
+            return (
+              <div key={lead.id} className="lead-card">
+                {lead.image_url && (
+                  <div className="lead-image">
+                    <img src={lead.image_url} alt={displayTitle} loading="lazy" />
+                  </div>
+                )}
+                <div className="lead-header">
+                  <h3>
+                    <a href={lead.link} target="_blank" rel="noopener noreferrer">
+                      {displayTitle}
+                    </a>
+                    {isTranslated && <span className="badge translation-badge">Translated</span>}
+                    {lead.detected_language && lead.detected_language !== 'en' && (
+                      <span className="badge language-badge">{getLanguageName(lead.detected_language)}</span>
+                    )}
+                  </h3>
+                  <button className="button-sm danger" onClick={() => handleDelete(lead.id)}>
+                    Delete
+                  </button>
+                </div>
+                <div className="lead-meta">
+                  <span className="badge">{getFeedName(lead.feed_id)}</span>
+                  {lead.author && <span>By {lead.author}</span>}
+                  {lead.published && <span>{new Date(lead.published).toLocaleDateString()}</span>}
+                </div>
+                {summary && (
+                  <p className="lead-summary">{summary}</p>
+                )}
+                <div className="lead-footer">
+                  <small>Collected: {new Date(lead.collected_at).toLocaleString()}</small>
+                  {!showTranslated && lead.title_translated && (
+                    <small className="translation-hint">English translation available</small>
+                  )}
+                </div>
               </div>
-              <div className="lead-meta">
-                <span className="badge">{getFeedName(lead.feed_id)}</span>
-                {lead.author && <span>By {lead.author}</span>}
-                {lead.published && <span>{new Date(lead.published).toLocaleDateString()}</span>}
-              </div>
-              {lead.summary && (
-                <p className="lead-summary">{lead.summary}</p>
-              )}
-              <div className="lead-footer">
-                <small>Collected: {new Date(lead.collected_at).toLocaleString()}</small>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

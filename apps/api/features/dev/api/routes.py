@@ -12,6 +12,15 @@ def clear_all_data():
         cursor = conn.cursor()
 
         # Delete all data from all tables
+        cursor.execute("DELETE FROM telegram_posts")
+        cursor.execute("DELETE FROM telegram_fetch_logs")
+        cursor.execute("DELETE FROM telegram_feed_tag_map")
+        cursor.execute("DELETE FROM telegram_feeds")
+        cursor.execute("DELETE FROM reddit_feeds")
+        cursor.execute("DELETE FROM instagram_posts")
+        cursor.execute("DELETE FROM instagram_fetch_logs")
+        cursor.execute("DELETE FROM instagram_feed_tag_map")
+        cursor.execute("DELETE FROM instagram_feeds")
         cursor.execute("DELETE FROM fetch_logs")
         cursor.execute("DELETE FROM leads")
         cursor.execute("DELETE FROM feed_tag_map")
@@ -27,7 +36,23 @@ def clear_all_data():
 
         return {
             "message": "All data cleared successfully",
-            "cleared": ["categories", "feeds", "feed_tags", "leads", "fetch_logs"]
+            "cleared": [
+                "categories",
+                "feeds",
+                "feed_tags",
+                "feed_tag_map",
+                "leads",
+                "fetch_logs",
+                "instagram_feeds",
+                "instagram_feed_tag_map",
+                "instagram_posts",
+                "instagram_fetch_logs",
+                "reddit_feeds",
+                "telegram_feeds",
+                "telegram_feed_tag_map",
+                "telegram_posts",
+                "telegram_fetch_logs",
+            ]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -35,25 +60,56 @@ def clear_all_data():
 
 @router.delete("/clear-fetched", status_code=200)
 def clear_fetched_data():
-    """Clear only fetched data (leads and fetch logs), keeping categories, feeds, and tags."""
+    """Clear only fetched data, keeping categories, feeds, tags, and feed mappings."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Delete only leads and fetch logs
+        # Delete only fetched content and logs
         cursor.execute("DELETE FROM fetch_logs")
         cursor.execute("DELETE FROM leads")
+        cursor.execute("DELETE FROM instagram_posts")
+        cursor.execute("DELETE FROM instagram_fetch_logs")
+        cursor.execute("DELETE FROM telegram_posts")
+        cursor.execute("DELETE FROM telegram_fetch_logs")
 
         # Reset autoincrement for these tables
-        cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('leads', 'fetch_logs')")
+        cursor.execute(
+            """DELETE FROM sqlite_sequence
+               WHERE name IN (
+                   'leads',
+                   'fetch_logs',
+                   'instagram_posts',
+                   'instagram_fetch_logs',
+                   'telegram_posts',
+                   'telegram_fetch_logs'
+               )"""
+        )
 
         conn.commit()
         conn.close()
 
         return {
             "message": "Fetched data cleared successfully",
-            "cleared": ["leads", "fetch_logs"],
-            "preserved": ["categories", "feeds", "feed_tags"]
+            "cleared": [
+                "leads",
+                "fetch_logs",
+                "instagram_posts",
+                "instagram_fetch_logs",
+                "telegram_posts",
+                "telegram_fetch_logs",
+            ],
+            "preserved": [
+                "categories",
+                "feeds",
+                "feed_tags",
+                "feed_tag_map",
+                "instagram_feeds",
+                "instagram_feed_tag_map",
+                "reddit_feeds",
+                "telegram_feeds",
+                "telegram_feed_tag_map",
+            ]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

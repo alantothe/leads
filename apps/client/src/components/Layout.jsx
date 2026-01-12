@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 
 export default function Layout() {
+
   return (
     <div className="app">
       <nav className="navbar">
@@ -9,10 +10,8 @@ export default function Layout() {
         </div>
         <div className="nav-links">
           <Link to="/">Dashboard</Link>
-          <Link to="/categories">Categories</Link>
-          <Link to="/feeds">RSS Feeds</Link>
-          <Link to="/instagram-feeds">Instagram</Link>
-          <Link to="/tags">Tags</Link>
+          <Link to="/approval" className="nav-link-approval">Approval Queue</Link>
+          <Link to="/subreddit-browser">Subreddit Browser</Link>
           <Link to="/leads">RSS Leads</Link>
           <Link to="/instagram-posts">IG Posts</Link>
           <Link to="/logs">Fetch Logs</Link>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { instagramPostsApi, instagramFeedsApi, categoriesApi, tagsApi } from '../api';
+import { Link } from 'react-router-dom';
+import { instagramPostsApi, instagramFeedsApi, categoriesApi, tagsApi, translationApi } from '../api';
 
 export default function InstagramPosts() {
   const [posts, setPosts] = useState([]);
@@ -14,6 +15,8 @@ export default function InstagramPosts() {
     tag: '',
     instagram_feed_id: '',
   });
+  const [showTranslated, setShowTranslated] = useState(true); // Default to showing English
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -91,10 +94,27 @@ export default function InstagramPosts() {
     return num;
   }
 
+  async function handleTranslate() {
+    if (!confirm('Translate all pending Instagram posts to English?')) return;
+    try {
+      setTranslating(true);
+      const result = await translationApi.translateInstagramPosts(filters);
+      alert(`Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`);
+      loadPosts(); // Reload to show translated content
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Instagram Posts</h1>
+        <div className="page-actions">
+          <Link to="/instagram-feeds" className="button secondary">Manage Instagram Feeds</Link>
+        </div>
         <div className="lead-count">{posts.length} posts found</div>
       </div>
 
@@ -154,41 +174,78 @@ export default function InstagramPosts() {
         </button>
       </div>
 
+      <div className="translation-controls card">
+        <div className="translation-header">
+          <h3>Translation</h3>
+          <button
+            className="button primary"
+            onClick={handleTranslate}
+            disabled={translating}
+          >
+            {translating ? 'Translating...' : 'Translate Pending Posts'}
+          </button>
+        </div>
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={showTranslated}
+              onChange={(e) => setShowTranslated(e.target.checked)}
+            />
+            Show English (translated when available)
+          </label>
+        </div>
+      </div>
+
       {loading ? (
         <div className="loading">Loading Instagram posts...</div>
       ) : (
         <div className="leads-list">
-          {posts.map((post) => (
-            <div key={post.id} className="lead-card instagram-post-card">
-              <div className="lead-header">
-                <div>
-                  <h3>
-                    <a href={post.permalink} target="_blank" rel="noopener noreferrer">
-                      @{post.username}
-                    </a>
-                  </h3>
-                  <span className="badge">{getFeedName(post.instagram_feed_id)}</span>
-                </div>
-                <button className="button-sm danger" onClick={() => handleDelete(post.id)}>
-                  Delete
-                </button>
-              </div>
+          {posts.map((post) => {
+            // Determine which caption to show based on toggle and availability
+            const displayCaption = showTranslated && post.caption_translated
+              ? post.caption_translated
+              : post.caption;
 
-              {post.media_url && (
-                <div className="instagram-media">
-                  {post.media_type === 'video' ? (
-                    <video controls poster={post.thumbnail_url}>
-                      <source src={post.media_url} type="video/mp4" />
-                    </video>
-                  ) : (
-                    <img src={post.media_url} alt="Instagram post" />
-                  )}
-                </div>
-              )}
+            const isTranslated = post.translation_status === 'translated';
+            const mediaUrl = post.media_url || post.thumbnail_url;
+            const showVideo = post.media_type === 'video' && post.media_url;
 
-              {post.caption && (
-                <p className="lead-summary">{post.caption}</p>
-              )}
+            return (
+              <div key={post.id} className="lead-card instagram-post-card">
+                <div className="lead-header">
+                  <div>
+                    <h3>
+                      <a href={post.permalink} target="_blank" rel="noopener noreferrer">
+                        @{post.username}
+                      </a>
+                      {isTranslated && <span className="badge translation-badge">Translated</span>}
+                      {post.detected_language && post.detected_language !== 'en' && (
+                        <span className="badge language-badge">{post.detected_language}</span>
+                      )}
+                    </h3>
+                    <span className="badge">{getFeedName(post.instagram_feed_id)}</span>
+                  </div>
+                  <button className="button-sm danger" onClick={() => handleDelete(post.id)}>
+                    Delete
+                  </button>
+                </div>
+
+                {mediaUrl && (
+                  <div className="instagram-media">
+                    {showVideo ? (
+                      <video controls poster={post.thumbnail_url}>
+                        <source src={post.media_url} type="video/mp4" />
+                      </video>
+                    ) : (
+                      <img src={mediaUrl} alt="Instagram post" />
+                    )}
+                  </div>
+                )}
+
+                {displayCaption && (
+                  <p className="lead-summary">{displayCaption}</p>
+                )}
 
               <div className="instagram-stats">
                 <span>{formatNumber(post.like_count)} likes</span>
@@ -200,9 +257,13 @@ export default function InstagramPosts() {
               <div className="lead-footer">
                 <small>Posted: {post.posted_at ? new Date(post.posted_at).toLocaleDateString() : 'Unknown'}</small>
                 <small>Collected: {new Date(post.collected_at).toLocaleString()}</small>
+                {!showTranslated && post.caption_translated && (
+                  <small className="translation-hint">English translation available</small>
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

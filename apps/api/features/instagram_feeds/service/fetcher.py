@@ -7,6 +7,7 @@ from features.instagram_feeds.service.instagram_client import (
     fetch_instagram_posts,
     InstagramAPIError
 )
+from features.translation.service.translator import get_translator
 
 DATABASE_PATH = Path(__file__).parent.parent.parent.parent / "leads.db"
 
@@ -61,6 +62,9 @@ def fetch_instagram_feed(feed_id: int) -> Dict:
         post_count = 0
         errors = []
 
+        # Get translator for language detection and translation
+        translator = get_translator()
+
         # Insert new posts into database
         for post in posts:
             try:
@@ -71,16 +75,34 @@ def fetch_instagram_feed(feed_id: int) -> Dict:
                 )
 
                 if not existing:
+                    # Auto-detect language and translate caption if not English
+                    caption_translated = None
+                    detected_language = None
+                    translation_status = 'already_english'
+                    translated_at = None
+
+                    if post.caption:
+                        detected_language = translator.detect_language(post.caption)
+
+                        if detected_language and detected_language != 'en':
+                            caption_translated, trans_status = translator.translate_text(
+                                post.caption, source=detected_language, target='en'
+                            )
+                            translation_status = 'translated'
+                            translated_at = datetime.utcnow().isoformat()
+
                     execute_query(
                         """INSERT INTO instagram_posts
                            (instagram_feed_id, post_id, username, caption, media_type,
                             media_url, thumbnail_url, like_count, comment_count,
-                            view_count, posted_at, permalink)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            view_count, posted_at, permalink, approval_status,
+                            caption_translated, detected_language, translation_status, translated_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         (feed_id, post.post_id, post.username, post.caption,
                          post.media_type, post.media_url, post.thumbnail_url,
                          post.like_count, post.comment_count, post.view_count,
-                         post.posted_at, post.permalink)
+                         post.posted_at, post.permalink, 'pending',
+                         caption_translated, detected_language, translation_status, translated_at)
                     )
                     post_count += 1
             except Exception as e:

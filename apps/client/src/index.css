@@ -58,10 +58,13 @@ body {
 
 .nav-links {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 1.5rem;
 }
 
-.nav-links a {
+.nav-links a,
+.nav-links summary {
   padding: 0.5rem 1rem;
   border-radius: 0.25rem;
   color: var(--text);
@@ -69,8 +72,61 @@ body {
   transition: background 0.2s;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links summary:hover,
+.nav-links summary:focus-visible {
   background: var(--bg);
+}
+
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-toggle {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nav-dropdown-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.nav-dropdown-toggle::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  margin-top: 1px;
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  min-width: 200px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 10;
+}
+
+.nav-dropdown:not([open]) .nav-dropdown-menu {
+  display: none;
+}
+
+.nav-dropdown-menu a {
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.35rem;
 }
 
 /* Container */
@@ -98,6 +154,13 @@ body {
   font-size: 2rem;
   font-weight: 600;
   margin: 0;
+}
+
+.page-subtitle {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  max-width: 640px;
 }
 
 /* Buttons */
@@ -349,6 +412,86 @@ td {
   gap: 0.5rem;
 }
 
+/* Subreddit Browser */
+.subreddit-directory .page-header {
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.subreddit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.subreddit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+}
+
+.subreddit-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.subreddit-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.subreddit-link {
+  color: var(--primary);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.subreddit-link:hover {
+  text-decoration: underline;
+}
+
+.subreddit-description {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  min-height: 2.5rem;
+}
+
+.subreddit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.subreddit-action-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-right: 0.25rem;
+}
+
+.subreddit-chip {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.75rem;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.subreddit-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: hsl(220 100% 97%);
+}
+
 /* Leads */
 .leads-list {
   display: grid;
@@ -360,6 +503,20 @@ td {
   padding: 1.5rem;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.lead-image {
+  margin: -1.5rem -1.5rem 1rem -1.5rem;
+  overflow: hidden;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.lead-image img {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
 }
 
 /* Instagram Posts */
@@ -518,4 +675,211 @@ td {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+/* Translation Controls */
+.translation-controls {
+  margin-bottom: 1.5rem;
+}
+
+.translation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.translation-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.translation-badge {
+  background: var(--success);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.language-badge {
+  background: var(--warning);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+}
+
+.translation-hint {
+  color: var(--success);
+  font-style: italic;
+  margin-left: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+
+/* Approval Queue Styles */
+.nav-link-approval {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.approval-stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-tabs button {
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.filter-tabs button:hover {
+  background: var(--card-bg);
+  border-color: var(--border);
+}
+
+.filter-tabs button.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.approval-list {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.approval-card {
+  background: var(--card-bg);
+  border-radius: 0.5rem;
+  border: 2px solid #f0f0f0;
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+
+.approval-card:hover {
+  border-color: #ddd;
+}
+
+.approval-image {
+  position: relative;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.approval-image img {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.approval-header {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  position: relative;
+  z-index: 2;
+}
+
+.approval-card:not(:has(.approval-image)) .approval-header {
+  padding-top: 1.5rem;
+}
+
+.type-badge {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.source-badge {
+  background: #f5f5f5;
+  color: #666;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.approval-card h3 {
+  margin: 0 1.5rem 0.5rem 1.5rem;
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+.approval-card .summary {
+  color: #666;
+  line-height: 1.6;
+  margin: 0.75rem 1.5rem;
+}
+
+.approval-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 1.5rem;
+  color: #666;
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.approval-meta a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.approval-meta a:hover {
+  text-decoration: underline;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 1.5rem 1.5rem 1.5rem;
+}
+
+.approval-actions button {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
 }

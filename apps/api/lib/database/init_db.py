@@ -4,6 +4,127 @@ from pathlib import Path
 DATABASE_PATH = Path(__file__).parent.parent.parent / "leads.db"
 
 
+def add_image_columns():
+    """Add image_url column to content tables."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    # Helper function to check if column exists
+    def column_exists(table_name, column_name):
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column_name in columns
+
+    # Add image_url to leads table
+    if not column_exists('leads', 'image_url'):
+        cursor.execute("ALTER TABLE leads ADD COLUMN image_url TEXT")
+
+    conn.commit()
+    conn.close()
+    print("✅ Image columns added to content tables")
+
+
+def add_translation_columns():
+    """Add translation columns to all content tables."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    # Helper function to check if column exists
+    def column_exists(table_name, column_name):
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column_name in columns
+
+    # Add translation columns to leads table
+    if not column_exists('leads', 'title_translated'):
+        cursor.execute("ALTER TABLE leads ADD COLUMN title_translated TEXT")
+    if not column_exists('leads', 'summary_translated'):
+        cursor.execute("ALTER TABLE leads ADD COLUMN summary_translated TEXT")
+    if not column_exists('leads', 'content_translated'):
+        cursor.execute("ALTER TABLE leads ADD COLUMN content_translated TEXT")
+    if not column_exists('leads', 'detected_language'):
+        cursor.execute("ALTER TABLE leads ADD COLUMN detected_language TEXT")
+    if not column_exists('leads', 'translation_status'):
+        cursor.execute("ALTER TABLE leads ADD COLUMN translation_status TEXT DEFAULT 'pending'")
+    if not column_exists('leads', 'translated_at'):
+        cursor.execute("ALTER TABLE leads ADD COLUMN translated_at TEXT")
+
+    # Add translation columns to instagram_posts table
+    if not column_exists('instagram_posts', 'caption_translated'):
+        cursor.execute("ALTER TABLE instagram_posts ADD COLUMN caption_translated TEXT")
+    if not column_exists('instagram_posts', 'detected_language'):
+        cursor.execute("ALTER TABLE instagram_posts ADD COLUMN detected_language TEXT")
+    if not column_exists('instagram_posts', 'translation_status'):
+        cursor.execute("ALTER TABLE instagram_posts ADD COLUMN translation_status TEXT DEFAULT 'pending'")
+    if not column_exists('instagram_posts', 'translated_at'):
+        cursor.execute("ALTER TABLE instagram_posts ADD COLUMN translated_at TEXT")
+
+    # Add translation columns to reddit_posts table
+    if not column_exists('reddit_posts', 'title_translated'):
+        cursor.execute("ALTER TABLE reddit_posts ADD COLUMN title_translated TEXT")
+    if not column_exists('reddit_posts', 'selftext_translated'):
+        cursor.execute("ALTER TABLE reddit_posts ADD COLUMN selftext_translated TEXT")
+    if not column_exists('reddit_posts', 'detected_language'):
+        cursor.execute("ALTER TABLE reddit_posts ADD COLUMN detected_language TEXT")
+    if not column_exists('reddit_posts', 'translation_status'):
+        cursor.execute("ALTER TABLE reddit_posts ADD COLUMN translation_status TEXT DEFAULT 'pending'")
+    if not column_exists('reddit_posts', 'translated_at'):
+        cursor.execute("ALTER TABLE reddit_posts ADD COLUMN translated_at TEXT")
+
+    # Add translation columns to telegram_posts table
+    if not column_exists('telegram_posts', 'text_translated'):
+        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN text_translated TEXT")
+    if not column_exists('telegram_posts', 'detected_language'):
+        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN detected_language TEXT")
+    if not column_exists('telegram_posts', 'translation_status'):
+        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN translation_status TEXT DEFAULT 'pending'")
+    if not column_exists('telegram_posts', 'translated_at'):
+        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN translated_at TEXT")
+
+    conn.commit()
+    conn.close()
+    print("✅ Translation columns added to all content tables")
+
+
+def add_approval_columns():
+    """Add approval workflow columns to all content tables."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    # Helper function to check if column exists
+    def column_exists(table_name, column_name):
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column_name in columns
+
+    tables = ['leads', 'instagram_posts', 'reddit_posts', 'telegram_posts']
+
+    for table in tables:
+        # Add approval_status column with DEFAULT 'approved' for existing records
+        if not column_exists(table, 'approval_status'):
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN approval_status TEXT DEFAULT 'approved'")
+
+        # Add approved_by column
+        if not column_exists(table, 'approved_by'):
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN approved_by TEXT")
+
+        # Add approved_at column
+        if not column_exists(table, 'approved_at'):
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN approved_at TEXT")
+
+        # Add approval_notes column
+        if not column_exists(table, 'approval_notes'):
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN approval_notes TEXT")
+
+    # Auto-approve all existing content (set explicit value for NULL entries)
+    for table in tables:
+        cursor.execute(f"UPDATE {table} SET approval_status = 'approved' WHERE approval_status IS NULL")
+
+    conn.commit()
+    conn.close()
+    print("✅ Approval columns added to all content tables")
+
+
 def init_database():
     """Initialize the database with schema and seed data."""
     conn = sqlite3.connect(DATABASE_PATH)
@@ -145,6 +266,124 @@ def init_database():
         )
     """)
 
+    # Create reddit_feeds table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reddit_feeds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            subreddit TEXT UNIQUE NOT NULL,
+            display_name TEXT NOT NULL,
+            description TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id)
+        )
+    """)
+
+    # Create telegram_feeds table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS telegram_feeds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            chat_id INTEGER UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            type TEXT NOT NULL,
+            fetch_interval INTEGER DEFAULT 60,
+            last_fetched TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id)
+        )
+    """)
+
+    # Create telegram_posts table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS telegram_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegram_feed_id INTEGER NOT NULL,
+            message_id INTEGER NOT NULL,
+            text TEXT,
+            timestamp TEXT NOT NULL,
+            sender_id INTEGER,
+            sender_name TEXT,
+            sender_username TEXT,
+            sender_type TEXT,
+            media_type TEXT,
+            media_file_name TEXT,
+            collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(telegram_feed_id, message_id),
+            FOREIGN KEY (telegram_feed_id) REFERENCES telegram_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create telegram_feed_tag_map table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS telegram_feed_tag_map (
+            telegram_feed_id INTEGER,
+            tag_id INTEGER,
+            PRIMARY KEY (telegram_feed_id, tag_id),
+            FOREIGN KEY (telegram_feed_id) REFERENCES telegram_feeds(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES feed_tags(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create telegram_fetch_logs table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS telegram_fetch_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegram_feed_id INTEGER NOT NULL,
+            fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            status TEXT,
+            post_count INTEGER,
+            error_message TEXT,
+            FOREIGN KEY (telegram_feed_id) REFERENCES telegram_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create reddit_posts table (if not exists)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reddit_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reddit_feed_id INTEGER NOT NULL,
+            post_id TEXT UNIQUE NOT NULL,
+            subreddit TEXT NOT NULL,
+            title TEXT NOT NULL,
+            author TEXT,
+            score INTEGER DEFAULT 0,
+            num_comments INTEGER DEFAULT 0,
+            permalink TEXT,
+            url TEXT,
+            selftext TEXT,
+            created_utc INTEGER,
+            post_type TEXT,
+            collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (reddit_feed_id) REFERENCES reddit_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create reddit_feed_tag_map table (if not exists)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reddit_feed_tag_map (
+            reddit_feed_id INTEGER,
+            tag_id INTEGER,
+            PRIMARY KEY (reddit_feed_id, tag_id),
+            FOREIGN KEY (reddit_feed_id) REFERENCES reddit_feeds(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES feed_tags(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create reddit_fetch_logs table (if not exists)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reddit_fetch_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reddit_feed_id INTEGER NOT NULL,
+            fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            status TEXT,
+            post_count INTEGER,
+            error_message TEXT,
+            FOREIGN KEY (reddit_feed_id) REFERENCES reddit_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
     # Insert seed data for categories
     categories = [
         (1, "Jobs"),
@@ -243,9 +482,27 @@ def init_database():
         instagram_feed_tag_mappings
     )
 
+    # Insert seed data for reddit_feeds
+    reddit_feeds = [
+        (1, 2, "python", "Python Community", "Programming discussions about Python"),
+        (2, 2, "artificial", "Artificial Intelligence", "AI news and discussions"),
+        (3, 3, "cryptocurrency", "Cryptocurrency", "Crypto market and tech discussions")
+    ]
+    cursor.executemany(
+        """INSERT OR IGNORE INTO reddit_feeds
+           (id, category_id, subreddit, display_name, description)
+           VALUES (?, ?, ?, ?, ?)""",
+        reddit_feeds
+    )
+
     conn.commit()
     conn.close()
     print(f"✅ Database initialized at {DATABASE_PATH}")
+
+    # Run migration for new columns
+    add_image_columns()
+    add_translation_columns()
+    add_approval_columns()
 
 
 if __name__ == "__main__":
