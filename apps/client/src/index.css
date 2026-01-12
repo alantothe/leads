@@ -1,15 +1,22 @@
 :root {
-  --primary: hsl(220 100% 50%);
-  --primary-dark: hsl(220 100% 40%);
-  --danger: hsl(0 70% 50%);
-  --danger-dark: hsl(0 70% 40%);
-  --success: hsl(140 70% 40%);
-  --warning: hsl(40 90% 50%);
-  --bg: hsl(220 15% 97%);
-  --card-bg: hsl(0 0% 100%);
-  --text: hsl(0 0% 10%);
-  --text-muted: hsl(0 0% 40%);
-  --border: hsl(0 0% 85%);
+  --primary: hsl(215 18% 30%);
+  --primary-dark: hsl(215 20% 24%);
+  --primary-soft: hsl(215 18% 92%);
+  --danger: hsl(8 24% 36%);
+  --danger-dark: hsl(8 26% 30%);
+  --danger-soft: hsl(8 20% 92%);
+  --success: hsl(150 14% 32%);
+  --success-soft: hsl(150 16% 92%);
+  --warning: hsl(36 20% 40%);
+  --warning-soft: hsl(36 22% 92%);
+  --bg: hsl(30 18% 97%);
+  --card-bg: hsl(30 22% 99%);
+  --text: hsl(210 15% 12%);
+  --text-muted: hsl(210 8% 44%);
+  --border: hsl(30 8% 88%);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-pop: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 24px 48px rgba(15, 23, 42, 0.12);
 }
 
 * {
@@ -52,8 +59,17 @@ body {
 .nav-brand h1 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-dark);
   margin: 0;
+}
+
+.nav-brand-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-brand-link:hover h1 {
+  text-decoration: underline;
 }
 
 .nav-links {
@@ -61,6 +77,12 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 1.5rem;
+}
+
+.nav-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .nav-links a,
@@ -76,6 +98,27 @@ body {
 .nav-links summary:hover,
 .nav-links summary:focus-visible {
   background: var(--bg);
+}
+
+.nav-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem;
+  border-radius: 0.5rem;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.nav-link-icon:hover,
+.nav-link-icon:focus-visible {
+  background: var(--bg);
+}
+
+.nav-icon {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .nav-dropdown {
@@ -112,7 +155,7 @@ body {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-pop);
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -168,12 +211,12 @@ button,
 .button {
   padding: 0.625rem 1rem;
   background: var(--primary);
-  color: white;
-  border: none;
+  color: hsl(0 0% 98%);
+  border: 1px solid transparent;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
   font-weight: 500;
 }
 
@@ -184,13 +227,15 @@ button:hover,
 }
 
 .button.secondary {
-  background: var(--card-bg);
-  color: var(--primary);
-  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .button.secondary:hover {
-  background: var(--bg);
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-dark);
 }
 
 .button.danger {
@@ -207,16 +252,31 @@ button:hover,
 }
 
 .button-sm.danger {
-  background: var(--danger);
+  background: linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 84% 50%) 100%);
+  color: hsl(0 0% 100%);
+  border: 1px solid hsl(0 84% 45%);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+  transition: all 0.2s ease;
 }
 
 .button-sm.danger:hover {
-  background: var(--danger-dark);
+  background: linear-gradient(135deg, hsl(0 84% 55%) 0%, hsl(0 84% 45%) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
 }
 
 .button-sm.warning {
-  background: var(--warning);
-  color: var(--text);
+  background: linear-gradient(135deg, hsl(38 92% 60%) 0%, hsl(38 92% 50%) 100%);
+  color: hsl(0 0% 100%);
+  border: 1px solid hsl(38 92% 45%);
+  box-shadow: 0 2px 4px rgba(255, 140, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.button-sm.warning:hover {
+  background: linear-gradient(135deg, hsl(38 92% 55%) 0%, hsl(38 92% 45%) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 140, 0, 0.4);
 }
 
 .button-sm.success {
@@ -226,9 +286,10 @@ button:hover,
 /* Cards */
 .card {
   background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   margin-bottom: 1.5rem;
 }
 
@@ -280,9 +341,10 @@ button:hover,
 /* Tables */
 .table-container {
   background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 table {
@@ -322,15 +384,16 @@ td {
 
 .stat-card {
   background: var(--card-bg);
+  border: 1px solid var(--border);
   padding: 1.5rem;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .stat-card h3 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--text);
   margin-bottom: 0.5rem;
 }
 
@@ -342,15 +405,15 @@ td {
 
 .stat-card a {
   font-size: 0.875rem;
-  color: var(--primary);
+  color: var(--primary-dark);
 }
 
 /* Badges and Tags */
 .badge {
   display: inline-block;
   padding: 0.25rem 0.625rem;
-  background: hsl(220 100% 95%);
-  color: hsl(220 100% 40%);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
   border-radius: 0.25rem;
   font-size: 0.75rem;
   font-weight: 500;
@@ -359,8 +422,8 @@ td {
 .tag {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  background: hsl(140 50% 95%);
-  color: hsl(140 70% 30%);
+  background: var(--success-soft);
+  color: var(--success);
   border-radius: 0.25rem;
   font-size: 0.75rem;
   margin-right: 0.25rem;
@@ -383,14 +446,14 @@ td {
 
 .status.active,
 .status.success {
-  background: hsl(140 50% 95%);
-  color: hsl(140 70% 30%);
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 .status.inactive,
 .status.failed {
-  background: hsl(0 50% 95%);
-  color: hsl(0 70% 40%);
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 /* Tags Grid */
@@ -402,9 +465,10 @@ td {
 
 .tag-card {
   background: var(--card-bg);
+  border: 1px solid var(--border);
   padding: 1rem;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -452,7 +516,7 @@ td {
 }
 
 .subreddit-link {
-  color: var(--primary);
+  color: var(--primary-dark);
   font-size: 0.875rem;
   text-decoration: none;
 }
@@ -496,8 +560,8 @@ td {
 
 .subreddit-chip:hover {
   border-color: var(--primary);
-  color: var(--primary);
-  background: hsl(220 100% 97%);
+  color: var(--primary-dark);
+  background: var(--primary-soft);
 }
 
 /* Leads */
@@ -508,9 +572,10 @@ td {
 
 .lead-card {
   background: var(--card-bg);
+  border: 1px solid var(--border);
   padding: 1.5rem;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .lead-image {
@@ -541,7 +606,7 @@ td {
   height: auto;
   border-radius: 0.5rem;
   object-fit: contain;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .instagram-stats {
@@ -554,8 +619,8 @@ td {
 }
 
 .media-type-badge {
-  background: hsl(220 100% 95%);
-  color: hsl(220 100% 40%);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.75rem;
@@ -628,21 +693,21 @@ td {
 }
 
 .error {
-  background: hsl(0 50% 95%);
-  color: hsl(0 70% 40%);
+  background: var(--danger-soft);
+  color: var(--danger);
   padding: 1rem;
   border-radius: 0.5rem;
   margin-bottom: 1rem;
 }
 
 .error-text {
-  color: hsl(0 70% 40%);
+  color: var(--danger);
 }
 
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -654,7 +719,7 @@ td {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-lg);
   width: min(520px, 100%);
   max-height: calc(100vh - 3rem);
   padding: 1.5rem;
@@ -665,15 +730,15 @@ td {
 }
 
 .dialog[data-tone='danger'] {
-  border-color: hsl(0 70% 70%);
+  border-color: var(--danger);
 }
 
 .dialog[data-tone='warning'] {
-  border-color: hsl(40 90% 70%);
+  border-color: var(--warning);
 }
 
 .dialog[data-tone='success'] {
-  border-color: hsl(140 70% 70%);
+  border-color: var(--success);
 }
 
 .dialog-title {
@@ -701,13 +766,14 @@ td {
   padding: 3rem;
   color: var(--text-muted);
   background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .link-small {
   font-size: 0.75rem;
-  color: var(--primary);
+  color: var(--primary-dark);
 }
 
 .lead-count,
@@ -719,8 +785,9 @@ td {
 /* Development Tools */
 .dev-tools {
   margin-top: 2rem;
-  border: 2px solid var(--warning);
-  background: hsl(40 90% 98%);
+  border: 2px solid hsl(45 86% 58%);
+  background: linear-gradient(135deg, hsl(45 86% 83%) 0%, hsl(45 86% 88%) 100%);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.25);
 }
 
 .dev-tools h2 {
@@ -730,7 +797,7 @@ td {
 }
 
 .dev-warning {
-  color: var(--danger);
+  color: var(--danger-dark);
   font-weight: 500;
   margin-bottom: 1rem;
   font-size: 0.875rem;
@@ -760,8 +827,8 @@ td {
 }
 
 .translation-badge {
-  background: var(--success);
-  color: white;
+  background: var(--success-soft);
+  color: var(--success);
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
@@ -769,8 +836,8 @@ td {
 }
 
 .language-badge {
-  background: var(--warning);
-  color: white;
+  background: var(--warning-soft);
+  color: var(--warning);
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
@@ -801,7 +868,7 @@ td {
 /* Approval Queue Styles */
 .nav-link-approval {
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--primary-dark);
 }
 
 .approval-stats {
@@ -835,9 +902,9 @@ td {
 
 .filter-tabs button.active {
   background: var(--primary);
-  color: white;
+  color: hsl(0 0% 98%);
   border-color: var(--primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .approval-list {
@@ -849,13 +916,15 @@ td {
 .approval-card {
   background: var(--card-bg);
   border-radius: 0.5rem;
-  border: 2px solid #f0f0f0;
-  transition: border-color 0.2s;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s, box-shadow 0.2s;
   overflow: hidden;
 }
 
 .approval-card:hover {
-  border-color: #ddd;
+  border-color: var(--primary-soft);
+  box-shadow: var(--shadow-pop);
 }
 
 .approval-image {
@@ -877,7 +946,7 @@ td {
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   flex-wrap: wrap;
-  background: rgba(255, 255, 255, 0.95);
+  background: hsl(30 22% 99% / 0.95);
   backdrop-filter: blur(4px);
   position: relative;
   z-index: 2;
@@ -888,8 +957,8 @@ td {
 }
 
 .type-badge {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
   padding: 0.25rem 0.75rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
@@ -897,8 +966,9 @@ td {
 }
 
 .source-badge {
-  background: #f5f5f5;
-  color: #666;
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
   padding: 0.25rem 0.75rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
@@ -911,7 +981,7 @@ td {
 }
 
 .approval-card .summary {
-  color: #666;
+  color: var(--text-muted);
   line-height: 1.6;
   margin: 0.75rem 1.5rem;
 }
@@ -921,14 +991,14 @@ td {
   justify-content: space-between;
   align-items: center;
   margin: 1rem 1.5rem;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.875rem;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .approval-meta a {
-  color: var(--primary-color);
+  color: var(--primary-dark);
   text-decoration: none;
 }
 

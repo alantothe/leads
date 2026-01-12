@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
 import Categories from './pages/Categories';
 import Feeds from './pages/Feeds';
 import InstagramFeeds from './pages/InstagramFeeds';
@@ -18,6 +19,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="approval" element={<ApprovalQueue />} />
           <Route path="categories" element={<Categories />} />
           <Route path="feeds" element={<Feeds />} />
