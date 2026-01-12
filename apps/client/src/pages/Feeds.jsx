@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
-import { feedsApi, categoriesApi, tagsApi } from '../api';
+import { useState } from 'react';
+import {
+  useCategories,
+  useCreateFeed,
+  useDeleteFeed,
+  useFeeds,
+  useFetchAllFeeds,
+  useFetchFeed,
+  useToggleFeedActive,
+  useUpdateFeed,
+} from '../hooks';
 
 export default function Feeds() {
-  const [feeds, setFeeds] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [allTags, setAllTags] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -18,38 +22,44 @@ export default function Feeds() {
     is_active: 1,
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const {
+    data: feeds = [],
+    isLoading: feedsLoading,
+    isFetching: feedsFetching,
+    error: feedsError,
+  } = useFeeds();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
 
-  async function loadData() {
-    try {
-      const [feedsData, categoriesData, tagsData] = await Promise.all([
-        feedsApi.getAll(),
-        categoriesApi.getAll(),
-        tagsApi.getAll(),
-      ]);
-      setFeeds(feedsData);
-      setCategories(categoriesData);
-      setAllTags(tagsData);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const createFeed = useCreateFeed();
+  const updateFeed = useUpdateFeed();
+  const deleteFeed = useDeleteFeed();
+  const toggleFeedActive = useToggleFeedActive();
+  const fetchFeed = useFetchFeed();
+  const fetchAllFeeds = useFetchAllFeeds();
+
+  const error = feedsError || categoriesError;
+  const isLoading = feedsLoading || categoriesLoading;
+  const isMutating =
+    createFeed.isPending ||
+    updateFeed.isPending ||
+    deleteFeed.isPending ||
+    toggleFeedActive.isPending ||
+    fetchFeed.isPending ||
+    fetchAllFeeds.isPending;
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
       if (editingId) {
-        await feedsApi.update(editingId, formData);
+        await updateFeed.mutateAsync({ id: editingId, data: formData });
       } else {
-        await feedsApi.create(formData);
+        await createFeed.mutateAsync(formData);
       }
       handleCancel();
-      loadData();
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -58,8 +68,7 @@ export default function Feeds() {
   async function handleDelete(id) {
     if (!confirm('Are you sure you want to delete this feed?')) return;
     try {
-      await feedsApi.delete(id);
-      loadData();
+      await deleteFeed.mutateAsync(id);
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -67,12 +76,7 @@ export default function Feeds() {
 
   async function toggleActive(feed) {
     try {
-      if (feed.is_active === 1) {
-        await feedsApi.deactivate(feed.id);
-      } else {
-        await feedsApi.activate(feed.id);
-      }
-      loadData();
+      await toggleFeedActive.mutateAsync(feed);
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -80,9 +84,8 @@ export default function Feeds() {
 
   async function handleFetch(feedId) {
     try {
-      const result = await feedsApi.fetch(feedId);
+      const result = await fetchFeed.mutateAsync(feedId);
       alert(`Fetch completed!\nStatus: ${result.status}\nLeads collected: ${result.lead_count}${result.error_message ? '\nErrors: ' + result.error_message : ''}`);
-      loadData();
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -91,10 +94,9 @@ export default function Feeds() {
   async function handleFetchAll() {
     if (!confirm('Fetch all active feeds? This may take a while.')) return;
     try {
-      const results = await feedsApi.fetchAll();
+      const results = await fetchAllFeeds.mutateAsync();
       const summary = results.map(r => `${r.feed_id}: ${r.lead_count} leads`).join('\n');
       alert(`Fetched ${results.length} feeds:\n${summary}`);
-      loadData();
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -131,23 +133,24 @@ export default function Feeds() {
     return category ? category.name : 'Unknown';
   }
 
-  if (loading) return <div className="loading">Loading feeds...</div>;
+  if (isLoading) return <div className="loading">Loading feeds...</div>;
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Feeds</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="button success" onClick={handleFetchAll}>
+          <button className="button success" onClick={handleFetchAll} disabled={isMutating}>
             Fetch All
           </button>
-          <button className="button" onClick={() => setShowForm(!showForm)}>
+          <button className="button" onClick={() => setShowForm(!showForm)} disabled={isMutating}>
             {showForm ? 'Cancel' : 'Add Feed'}
           </button>
         </div>
+        {feedsFetching && <span className="badge">Refreshing...</span>}
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error">{error.message}</div>}
 
       {showForm && (
         <form className="form card" onSubmit={handleSubmit}>
@@ -211,10 +214,10 @@ export default function Feeds() {
             </label>
           </div>
           <div className="form-actions">
-            <button type="submit" className="button">
+            <button type="submit" className="button" disabled={isMutating}>
               {editingId ? 'Update' : 'Create'}
             </button>
-            <button type="button" className="button secondary" onClick={handleCancel}>
+            <button type="button" className="button secondary" onClick={handleCancel} disabled={isMutating}>
               Cancel
             </button>
           </div>
@@ -264,7 +267,7 @@ export default function Feeds() {
                   </span>
                 </td>
                 <td className="actions">
-                  <button className="button-sm success" onClick={() => handleFetch(feed.id)}>
+                  <button className="button-sm success" onClick={() => handleFetch(feed.id)} disabled={isMutating}>
                     Fetch
                   </button>
                   <button className="button-sm" onClick={() => handleEdit(feed)}>
@@ -273,10 +276,11 @@ export default function Feeds() {
                   <button
                     className={`button-sm ${feed.is_active === 1 ? 'warning' : 'success'}`}
                     onClick={() => toggleActive(feed)}
+                    disabled={isMutating}
                   >
                     {feed.is_active === 1 ? 'Deactivate' : 'Activate'}
                   </button>
-                  <button className="button-sm danger" onClick={() => handleDelete(feed.id)}>
+                  <button className="button-sm danger" onClick={() => handleDelete(feed.id)} disabled={isMutating}>
                     Delete
                   </button>
                 </td>

@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { instagramPostsApi, instagramFeedsApi, categoriesApi, tagsApi, translationApi } from '../api';
+import {
+  useCategories,
+  useInstagramFeeds,
+  useInstagramPostsList,
+  useTags,
+  useDeleteInstagramPost,
+  useTranslateInstagramPosts,
+} from '../hooks';
 
 export default function InstagramPosts() {
-  const [posts, setPosts] = useState([]);
-  const [feeds, setFeeds] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [tags, setTags] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     category: '',
@@ -16,55 +17,40 @@ export default function InstagramPosts() {
     instagram_feed_id: '',
   });
   const [showTranslated, setShowTranslated] = useState(true); // Default to showing English
-  const [translating, setTranslating] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const {
+    data: posts = [],
+    isLoading: postsLoading,
+    isFetching: postsFetching,
+    error: postsError,
+  } = useInstagramPostsList(filters);
+  const {
+    data: feeds = [],
+    isLoading: feedsLoading,
+    error: feedsError,
+  } = useInstagramFeeds();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
+  const {
+    data: tags = [],
+    isLoading: tagsLoading,
+    error: tagsError,
+  } = useTags();
 
-  useEffect(() => {
-    loadPosts();
-  }, [filters]);
+  const deletePost = useDeleteInstagramPost();
+  const translatePosts = useTranslateInstagramPosts();
 
-  async function loadData() {
-    try {
-      const [feedsData, categoriesData, tagsData] = await Promise.all([
-        instagramFeedsApi.getAll(),
-        categoriesApi.getAll(),
-        tagsApi.getAll(),
-      ]);
-      setFeeds(feedsData);
-      setCategories(categoriesData);
-      setTags(tagsData);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  async function loadPosts() {
-    try {
-      setLoading(true);
-      const params = {};
-      if (filters.search) params.search = filters.search;
-      if (filters.category) params.category = filters.category;
-      if (filters.tag) params.tag = filters.tag;
-      if (filters.instagram_feed_id) params.instagram_feed_id = filters.instagram_feed_id;
-
-      const data = await instagramPostsApi.getAll(params);
-      setPosts(data);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const isLoading = postsLoading || feedsLoading || categoriesLoading || tagsLoading;
+  const error = postsError || feedsError || categoriesError || tagsError;
+  const isMutating = deletePost.isPending || translatePosts.isPending;
 
   async function handleDelete(id) {
     if (!confirm('Are you sure you want to delete this Instagram post?')) return;
     try {
-      await instagramPostsApi.delete(id);
-      loadPosts();
+      await deletePost.mutateAsync(id);
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -97,14 +83,10 @@ export default function InstagramPosts() {
   async function handleTranslate() {
     if (!confirm('Translate all pending Instagram posts to English?')) return;
     try {
-      setTranslating(true);
-      const result = await translationApi.translateInstagramPosts(filters);
+      const result = await translatePosts.mutateAsync(filters);
       alert(`Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`);
-      loadPosts(); // Reload to show translated content
     } catch (err) {
       alert(`Error: ${err.message}`);
-    } finally {
-      setTranslating(false);
     }
   }
 
@@ -118,7 +100,9 @@ export default function InstagramPosts() {
         <div className="lead-count">{posts.length} posts found</div>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {postsFetching && !postsLoading && <div className="badge">Refreshing...</div>}
+
+      {error && <div className="error">{error.message}</div>}
 
       <div className="filters card">
         <h3>Filters</h3>
@@ -180,9 +164,9 @@ export default function InstagramPosts() {
           <button
             className="button primary"
             onClick={handleTranslate}
-            disabled={translating}
+            disabled={translatePosts.isPending}
           >
-            {translating ? 'Translating...' : 'Translate Pending Posts'}
+            {translatePosts.isPending ? 'Translating...' : 'Translate Pending Posts'}
           </button>
         </div>
         <div className="form-group">
@@ -197,7 +181,7 @@ export default function InstagramPosts() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="loading">Loading Instagram posts...</div>
       ) : (
         <div className="leads-list">
@@ -226,7 +210,7 @@ export default function InstagramPosts() {
                     </h3>
                     <span className="badge">{getFeedName(post.instagram_feed_id)}</span>
                   </div>
-                  <button className="button-sm danger" onClick={() => handleDelete(post.id)}>
+                  <button className="button-sm danger" onClick={() => handleDelete(post.id)} disabled={isMutating}>
                     Delete
                   </button>
                 </div>
@@ -267,7 +251,7 @@ export default function InstagramPosts() {
         </div>
       )}
 
-      {posts.length === 0 && !loading && (
+      {posts.length === 0 && !isLoading && (
         <div className="empty-state">
           <p>No Instagram posts found. Try adjusting your filters or fetch some Instagram feeds!</p>
         </div>

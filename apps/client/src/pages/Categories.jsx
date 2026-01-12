@@ -1,42 +1,35 @@
-import { useEffect, useState } from 'react';
-import { categoriesApi } from '../api';
+import { useState } from 'react';
+import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from '../hooks';
 
 export default function Categories() {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '' });
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
+  const {
+    data: categories = [],
+    isLoading,
+    isFetching,
+    error,
+  } = useCategories();
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
 
-  async function loadCategories() {
-    try {
-      const data = await categoriesApi.getAll();
-      setCategories(data);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const isMutating =
+    createCategory.isPending || updateCategory.isPending || deleteCategory.isPending;
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
       if (editingId) {
-        await categoriesApi.update(editingId, formData);
+        await updateCategory.mutateAsync({ id: editingId, data: formData });
       } else {
-        await categoriesApi.create(formData);
+        await createCategory.mutateAsync(formData);
       }
       setFormData({ name: '' });
       setShowForm(false);
       setEditingId(null);
-      loadCategories();
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -45,8 +38,7 @@ export default function Categories() {
   async function handleDelete(id) {
     if (!confirm('Are you sure you want to delete this category?')) return;
     try {
-      await categoriesApi.delete(id);
-      loadCategories();
+      await deleteCategory.mutateAsync(id);
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -64,18 +56,19 @@ export default function Categories() {
     setFormData({ name: '', description: '' });
   }
 
-  if (loading) return <div className="loading">Loading categories...</div>;
+  if (isLoading) return <div className="loading">Loading categories...</div>;
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Categories</h1>
-        <button className="button" onClick={() => setShowForm(!showForm)}>
+        <button className="button" onClick={() => setShowForm(!showForm)} disabled={isMutating}>
           {showForm ? 'Cancel' : 'Add Category'}
         </button>
+        {isFetching && <span className="badge">Refreshing...</span>}
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error">{error.message}</div>}
 
       {showForm && (
         <form className="form card" onSubmit={handleSubmit}>
@@ -90,10 +83,10 @@ export default function Categories() {
             />
           </div>
           <div className="form-actions">
-            <button type="submit" className="button">
+            <button type="submit" className="button" disabled={isMutating}>
               {editingId ? 'Update' : 'Create'}
             </button>
-            <button type="button" className="button secondary" onClick={handleCancel}>
+            <button type="button" className="button secondary" onClick={handleCancel} disabled={isMutating}>
               Cancel
             </button>
           </div>
@@ -118,7 +111,7 @@ export default function Categories() {
                   <button className="button-sm" onClick={() => handleEdit(category)}>
                     Edit
                   </button>
-                  <button className="button-sm danger" onClick={() => handleDelete(category.id)}>
+                  <button className="button-sm danger" onClick={() => handleDelete(category.id)} disabled={isMutating}>
                     Delete
                   </button>
                 </td>

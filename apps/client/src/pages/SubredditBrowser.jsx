@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { subredditsApi, categoriesApi } from '../api';
+import { useCategories, useSubreddits } from '../hooks';
 
 const browseOptions = [
   { label: 'Hot', sort: 'hot' },
@@ -18,30 +18,20 @@ const bestOptions = [
 ];
 
 export default function SubredditBrowser() {
-  const [subreddits, setSubreddits] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    data: subreddits = [],
+    isLoading: subredditsLoading,
+    isFetching: subredditsFetching,
+    error: subredditsError,
+  } = useSubreddits();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
-    try {
-      const [subredditsData, categoriesData] = await Promise.all([
-        subredditsApi.getAll(),
-        categoriesApi.getAll(),
-      ]);
-      setSubreddits(subredditsData);
-      setCategories(categoriesData);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const isLoading = subredditsLoading || categoriesLoading;
+  const error = subredditsError || categoriesError;
 
   const sortedSubreddits = useMemo(() => {
     return [...subreddits].sort((a, b) => {
@@ -69,7 +59,7 @@ export default function SubredditBrowser() {
     return `${text.slice(0, maxLength)}...`;
   }
 
-  if (loading) return <div className="loading">Loading subreddit browser...</div>;
+  if (isLoading) return <div className="loading">Loading subreddit browser...</div>;
 
   return (
     <div className="page subreddit-directory">
@@ -85,7 +75,9 @@ export default function SubredditBrowser() {
         </Link>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {subredditsFetching && <div className="badge">Refreshing...</div>}
+
+      {error && <div className="error">{error.message}</div>}
 
       <div className="subreddit-grid">
         {sortedSubreddits.map((subreddit) => (
@@ -141,7 +133,7 @@ export default function SubredditBrowser() {
         ))}
       </div>
 
-      {sortedSubreddits.length === 0 && !loading && (
+      {sortedSubreddits.length === 0 && !isLoading && (
         <div className="empty-state">
           <p>No subreddits yet. Add some in the manager to get started.</p>
         </div>

@@ -1,6 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { leadsApi, feedsApi, categoriesApi, tagsApi, translationApi } from '../api';
+import {
+  useCategories,
+  useDeleteLead,
+  useDetectLeadLanguages,
+  useFeeds,
+  useLeadsList,
+  useTags,
+  useTranslateLeads,
+} from '../hooks';
 
 const SUMMARY_SUFFIX_RE = /\s*The post\b[\s\S]*?\bfirst appeared on\b[\s\S]*$/i;
 
@@ -94,12 +102,6 @@ function cleanLeadSummary(summary) {
 }
 
 export default function Leads() {
-  const [leads, setLeads] = useState([]);
-  const [feeds, setFeeds] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [tags, setTags] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     category: '',
@@ -107,56 +109,41 @@ export default function Leads() {
     feed_id: '',
   });
   const [showTranslated, setShowTranslated] = useState(true); // Default to showing English
-  const [translating, setTranslating] = useState(false);
-  const [detectingLanguages, setDetectingLanguages] = useState(false);
+  const {
+    data: leads = [],
+    isLoading: leadsLoading,
+    isFetching: leadsFetching,
+    error: leadsError,
+  } = useLeadsList(filters);
+  const {
+    data: feeds = [],
+    isLoading: feedsLoading,
+    error: feedsError,
+  } = useFeeds();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
+  const {
+    data: tags = [],
+    isLoading: tagsLoading,
+    error: tagsError,
+  } = useTags();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const deleteLead = useDeleteLead();
+  const translateLeads = useTranslateLeads();
+  const detectLanguages = useDetectLeadLanguages();
 
-  useEffect(() => {
-    loadLeads();
-  }, [filters]);
-
-  async function loadData() {
-    try {
-      const [feedsData, categoriesData, tagsData] = await Promise.all([
-        feedsApi.getAll(),
-        categoriesApi.getAll(),
-        tagsApi.getAll(),
-      ]);
-      setFeeds(feedsData);
-      setCategories(categoriesData);
-      setTags(tagsData);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  async function loadLeads() {
-    try {
-      setLoading(true);
-      const params = {};
-      if (filters.search) params.search = filters.search;
-      if (filters.category) params.category = filters.category;
-      if (filters.tag) params.tag = filters.tag;
-      if (filters.feed_id) params.feed_id = filters.feed_id;
-
-      const data = await leadsApi.getAll(params);
-      setLeads(data);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const isLoading = leadsLoading || feedsLoading || categoriesLoading || tagsLoading;
+  const error = leadsError || feedsError || categoriesError || tagsError;
+  const isMutating =
+    deleteLead.isPending || translateLeads.isPending || detectLanguages.isPending;
 
   async function handleDelete(id) {
     if (!confirm('Are you sure you want to delete this lead?')) return;
     try {
-      await leadsApi.delete(id);
-      loadLeads();
+      await deleteLead.mutateAsync(id);
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -183,29 +170,21 @@ export default function Leads() {
   async function handleTranslate() {
     if (!confirm('Translate all pending leads to English?')) return;
     try {
-      setTranslating(true);
-      const result = await translationApi.translateLeads(filters);
+      const result = await translateLeads.mutateAsync(filters);
       alert(`Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`);
-      loadLeads(); // Reload to show translated content
     } catch (err) {
       alert(`Error: ${err.message}`);
-    } finally {
-      setTranslating(false);
     }
   }
 
   async function handleDetectLanguages() {
     if (!confirm('Re-detect language for ALL leads? This will fix any incorrect language detections.')) return;
     try {
-      setDetectingLanguages(true);
       // Force re-detection for all leads (not just NULL ones)
-      const result = await translationApi.detectMissingLanguages(true);
+      const result = await detectLanguages.mutateAsync(true);
       alert(`Language detection complete!\n${result.leads_updated} leads updated`);
-      loadLeads(); // Reload to show detected languages
     } catch (err) {
       alert(`Error: ${err.message}`);
-    } finally {
-      setDetectingLanguages(false);
     }
   }
 
@@ -219,7 +198,9 @@ export default function Leads() {
         <div className="lead-count">{leads.length} leads found</div>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {leadsFetching && !leadsLoading && <div className="badge">Refreshing...</div>}
+
+      {error && <div className="error">{error.message}</div>}
 
       <div className="filters card">
         <h3>Filters</h3>
@@ -282,16 +263,16 @@ export default function Leads() {
             <button
               className="button secondary"
               onClick={handleDetectLanguages}
-              disabled={detectingLanguages}
+              disabled={detectLanguages.isPending}
             >
-              {detectingLanguages ? 'Detecting...' : 'Detect Languages'}
+              {detectLanguages.isPending ? 'Detecting...' : 'Detect Languages'}
             </button>
             <button
               className="button primary"
               onClick={handleTranslate}
-              disabled={translating}
+              disabled={translateLeads.isPending}
             >
-              {translating ? 'Translating...' : 'Translate Pending Leads'}
+              {translateLeads.isPending ? 'Translating...' : 'Translate Pending Leads'}
             </button>
           </div>
         </div>
@@ -307,7 +288,7 @@ export default function Leads() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="loading">Loading leads...</div>
       ) : (
         <div className="leads-list">
@@ -343,7 +324,7 @@ export default function Leads() {
                       <span className="badge language-badge">{getLanguageName(lead.detected_language)}</span>
                     )}
                   </h3>
-                  <button className="button-sm danger" onClick={() => handleDelete(lead.id)}>
+                  <button className="button-sm danger" onClick={() => handleDelete(lead.id)} disabled={isMutating}>
                     Delete
                   </button>
                 </div>
@@ -367,7 +348,7 @@ export default function Leads() {
         </div>
       )}
 
-      {leads.length === 0 && !loading && (
+      {leads.length === 0 && !isLoading && (
         <div className="empty-state">
           <p>No leads found. Try adjusting your filters or fetch some feeds!</p>
         </div>

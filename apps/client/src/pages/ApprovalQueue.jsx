@@ -1,5 +1,11 @@
-import { useEffect, useState } from 'react';
-import { approvalApi } from '../api';
+import { useState } from 'react';
+import {
+  useApprovalPending,
+  useApprovalStats,
+  useApproveItem,
+  useRejectItem,
+  useBatchApprove,
+} from '../hooks';
 
 const CONTENT_TYPE_LABELS = {
   lead: 'RSS Lead',
@@ -9,43 +15,41 @@ const CONTENT_TYPE_LABELS = {
 };
 
 export default function ApprovalQueue() {
-  const [pendingItems, setPendingItems] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' or content_type
   const [approvedBy, setApprovedBy] = useState('admin'); // Default user
 
-  useEffect(() => {
-    loadData();
-  }, [filter]);
+  const contentType = filter === 'all' ? null : filter;
+  const {
+    data: pendingData,
+    isLoading: pendingLoading,
+    isFetching: pendingFetching,
+    error: pendingError,
+  } = useApprovalPending(contentType);
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useApprovalStats();
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const filterValue = filter === 'all' ? null : filter;
-      const [items, statsData] = await Promise.all([
-        approvalApi.getPending(filterValue),
-        approvalApi.getStats()
-      ]);
-      setPendingItems(items.items);
-      setStats(statsData);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const approveMutation = useApproveItem();
+  const rejectMutation = useRejectItem();
+  const batchApproveMutation = useBatchApprove();
+
+  const pendingItems = pendingData?.items || [];
+  const isLoading = pendingLoading || statsLoading;
+  const error = pendingError || statsError;
+  const isMutating =
+    approveMutation.isPending ||
+    rejectMutation.isPending ||
+    batchApproveMutation.isPending;
 
   async function handleApprove(item) {
     try {
-      await approvalApi.approve(
-        item.content_type,
-        item.content_id,
-        approvedBy
-      );
-      loadData(); // Reload to update list
+      await approveMutation.mutateAsync({
+        contentType: item.content_type,
+        contentId: item.content_id,
+        approvedBy,
+      });
     } catch (err) {
       alert(`Error approving: ${err.message}`);
     }
@@ -53,13 +57,12 @@ export default function ApprovalQueue() {
 
   async function handleReject(item, notes = null) {
     try {
-      await approvalApi.reject(
-        item.content_type,
-        item.content_id,
+      await rejectMutation.mutateAsync({
+        contentType: item.content_type,
+        contentId: item.content_id,
         approvedBy,
-        notes
-      );
-      loadData(); // Reload to update list
+        notes,
+      });
     } catch (err) {
       alert(`Error rejecting: ${err.message}`);
     }
@@ -76,8 +79,7 @@ export default function ApprovalQueue() {
     }));
 
     try {
-      await approvalApi.batchApprove(items);
-      loadData();
+      await batchApproveMutation.mutateAsync(items);
     } catch (err) {
       alert(`Error batch approving: ${err.message}`);
     }
@@ -96,16 +98,19 @@ export default function ApprovalQueue() {
               <button
                 className="button primary"
                 onClick={handleApproveAll}
-                disabled={pendingItems.length === 0}
+                disabled={pendingItems.length === 0 || isMutating}
               >
                 Approve All
               </button>
             </>
           )}
+          {pendingFetching && !pendingLoading && (
+            <span className="badge">Refreshing...</span>
+          )}
         </div>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error">{error.message}</div>}
 
       {/* Filter Tabs */}
       <div className="filters card">
@@ -144,7 +149,7 @@ export default function ApprovalQueue() {
       </div>
 
       {/* Pending Items List */}
-      {loading ? (
+      {isLoading ? (
         <div className="loading">Loading pending items...</div>
       ) : (
         <div className="approval-list">
@@ -179,12 +184,14 @@ export default function ApprovalQueue() {
                 <button
                   className="button primary"
                   onClick={() => handleApprove(item)}
+                  disabled={isMutating}
                 >
                   ✓ Approve
                 </button>
                 <button
                   className="button danger"
                   onClick={() => handleReject(item)}
+                  disabled={isMutating}
                 >
                   ✕ Reject
                 </button>
@@ -194,7 +201,7 @@ export default function ApprovalQueue() {
         </div>
       )}
 
-      {pendingItems.length === 0 && !loading && (
+      {pendingItems.length === 0 && !isLoading && (
         <div className="empty-state">
           <p>No pending items to review!</p>
         </div>

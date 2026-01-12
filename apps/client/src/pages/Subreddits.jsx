@@ -1,11 +1,7 @@
-import { useEffect, useState } from 'react';
-import { subredditsApi, categoriesApi } from '../api';
+import { useState } from 'react';
+import { useCategories, useCreateSubreddit, useDeleteSubreddit, useSubreddits, useUpdateSubreddit } from '../hooks';
 
 export default function Subreddits() {
-  const [subreddits, setSubreddits] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -15,36 +11,36 @@ export default function Subreddits() {
     description: '',
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const {
+    data: subreddits = [],
+    isLoading: subredditsLoading,
+    isFetching: subredditsFetching,
+    error: subredditsError,
+  } = useSubreddits();
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
 
-  async function loadData() {
-    try {
-      const [subredditsData, categoriesData] = await Promise.all([
-        subredditsApi.getAll(),
-        categoriesApi.getAll(),
-      ]);
-      setSubreddits(subredditsData);
-      setCategories(categoriesData);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const createSubreddit = useCreateSubreddit();
+  const updateSubreddit = useUpdateSubreddit();
+  const deleteSubreddit = useDeleteSubreddit();
+
+  const isLoading = subredditsLoading || categoriesLoading;
+  const error = subredditsError || categoriesError;
+  const isMutating =
+    createSubreddit.isPending || updateSubreddit.isPending || deleteSubreddit.isPending;
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
       if (editingId) {
-        await subredditsApi.update(editingId, formData);
+        await updateSubreddit.mutateAsync({ id: editingId, data: formData });
       } else {
-        await subredditsApi.create(formData);
+        await createSubreddit.mutateAsync(formData);
       }
       handleCancel();
-      loadData();
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -53,8 +49,7 @@ export default function Subreddits() {
   async function handleDelete(id) {
     if (!confirm('Are you sure you want to delete this subreddit?')) return;
     try {
-      await subredditsApi.delete(id);
-      loadData();
+      await deleteSubreddit.mutateAsync(id);
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -104,18 +99,19 @@ export default function Subreddits() {
     return parsed.toLocaleString();
   }
 
-  if (loading) return <div className="loading">Loading subreddits...</div>;
+  if (isLoading) return <div className="loading">Loading subreddits...</div>;
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Subreddits</h1>
-        <button className="button" onClick={() => setShowForm(!showForm)}>
+        <button className="button" onClick={() => setShowForm(!showForm)} disabled={isMutating}>
           {showForm ? 'Cancel' : 'Add Subreddit'}
         </button>
+        {subredditsFetching && <span className="badge">Refreshing...</span>}
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error">{error.message}</div>}
 
       {showForm && (
         <form className="form card" onSubmit={handleSubmit}>
@@ -166,10 +162,10 @@ export default function Subreddits() {
             />
           </div>
           <div className="form-actions">
-            <button type="submit" className="button">
+            <button type="submit" className="button" disabled={isMutating}>
               {editingId ? 'Update' : 'Create'}
             </button>
-            <button type="button" className="button secondary" onClick={handleCancel}>
+            <button type="button" className="button secondary" onClick={handleCancel} disabled={isMutating}>
               Cancel
             </button>
           </div>
@@ -208,7 +204,7 @@ export default function Subreddits() {
                   <button className="button-sm" onClick={() => handleEdit(subreddit)}>
                     Edit
                   </button>
-                  <button className="button-sm danger" onClick={() => handleDelete(subreddit.id)}>
+                  <button className="button-sm danger" onClick={() => handleDelete(subreddit.id)} disabled={isMutating}>
                     Delete
                   </button>
                 </td>

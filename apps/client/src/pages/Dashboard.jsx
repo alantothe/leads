@@ -1,53 +1,45 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { categoriesApi, feedsApi, leadsApi, tagsApi, devApi } from '../api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { devApi } from '../api';
+import { useDashboardStats } from '../hooks';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    categories: 0,
-    feeds: 0,
-    activeFeeds: 0,
-    tags: 0,
-    leads: 0,
+  const queryClient = useQueryClient();
+  const {
+    data: stats,
+    isLoading,
+    isFetching,
+    error,
+  } = useDashboardStats();
+
+  const clearFetchedMutation = useMutation({
+    mutationFn: () => devApi.clearFetched(),
+    onSuccess: (result) => {
+      alert(result.message);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries();
+    },
   });
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  const clearAllMutation = useMutation({
+    mutationFn: () => devApi.clearAll(),
+    onSuccess: (result) => {
+      alert(result.message);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries();
+    },
+  });
 
-  async function loadStats() {
-    try {
-      setLoading(true);
-      const [categories, feeds, tags, leads] = await Promise.all([
-        categoriesApi.getAll(),
-        feedsApi.getAll(),
-        tagsApi.getAll(),
-        leadsApi.getAll({ limit: 1 }),
-      ]);
-
-      setStats({
-        categories: categories.length,
-        feeds: feeds.length,
-        activeFeeds: feeds.filter(f => f.is_active === 1).length,
-        tags: tags.length,
-        leads: leads.length,
-      });
-    } catch (error) {
-      console.error('Failed to load stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const isMutating = clearFetchedMutation.isPending || clearAllMutation.isPending;
 
   async function handleClearFetched() {
     if (!confirm('Clear all fetched content and logs (RSS, Instagram, Telegram)? This will keep categories, feeds, tags, and feed mappings.')) {
       return;
     }
     try {
-      const result = await devApi.clearFetched();
-      alert(result.message);
-      loadStats();
+      await clearFetchedMutation.mutateAsync();
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
@@ -58,44 +50,47 @@ export default function Dashboard() {
       return;
     }
     try {
-      const result = await devApi.clearAll();
-      alert(result.message);
-      loadStats();
+      await clearAllMutation.mutateAsync();
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return <div className="loading">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error.message}</div>;
   }
 
   return (
     <div className="dashboard">
       <h1>Dashboard</h1>
+      {isFetching && <div className="badge">Refreshing...</div>}
       <div className="stats-grid">
         <div className="stat-card">
-          <h3>{stats.categories}</h3>
+          <h3>{stats?.categories ?? 0}</h3>
           <p>Categories</p>
           <Link to="/categories">View All</Link>
         </div>
         <div className="stat-card">
-          <h3>{stats.feeds}</h3>
+          <h3>{stats?.feeds ?? 0}</h3>
           <p>Total Feeds</p>
           <Link to="/feeds">View All</Link>
         </div>
         <div className="stat-card">
-          <h3>{stats.activeFeeds}</h3>
+          <h3>{stats?.activeFeeds ?? 0}</h3>
           <p>Active Feeds</p>
           <Link to="/feeds?active=1">View Active</Link>
         </div>
         <div className="stat-card">
-          <h3>{stats.tags}</h3>
+          <h3>{stats?.tags ?? 0}</h3>
           <p>Tags</p>
           <Link to="/tags">View All</Link>
         </div>
         <div className="stat-card">
-          <h3>{stats.leads}</h3>
+          <h3>{stats?.leads ?? 0}</h3>
           <p>Leads Collected</p>
           <Link to="/leads">View All</Link>
         </div>
@@ -105,10 +100,10 @@ export default function Dashboard() {
         <h2>Development Tools</h2>
         <p className="dev-warning">⚠️ Use these tools carefully - they will delete data!</p>
         <div className="dev-actions">
-          <button className="button-sm warning" onClick={handleClearFetched}>
+          <button className="button-sm warning" onClick={handleClearFetched} disabled={isMutating}>
             Clear Fetched Data (Posts & Logs)
           </button>
-          <button className="button-sm danger" onClick={handleClearAll}>
+          <button className="button-sm danger" onClick={handleClearAll} disabled={isMutating}>
             Clear All Data
           </button>
         </div>

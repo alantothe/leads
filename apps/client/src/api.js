@@ -11,7 +11,9 @@ async function request(endpoint, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
-    throw new Error(error.detail || 'An error occurred');
+    const err = new Error(error.detail || 'An error occurred');
+    err.status = response.status;
+    throw err;
   }
 
   if (response.status === 204) {

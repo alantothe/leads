@@ -1,55 +1,34 @@
-import { useEffect, useState } from 'react';
-import { fetchLogsApi, feedsApi } from '../api';
+import { useState } from 'react';
+import { useDeleteFetchLog, useFetchLogsList, useFeeds } from '../hooks';
 
 export default function FetchLogs() {
-  const [logs, setLogs] = useState([]);
-  const [feeds, setFeeds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     feed_id: '',
     status: '',
   });
 
-  useEffect(() => {
-    loadFeeds();
-  }, []);
+  const {
+    data: feeds = [],
+    isLoading: feedsLoading,
+    error: feedsError,
+  } = useFeeds();
+  const {
+    data: logs = [],
+    isLoading: logsLoading,
+    isFetching: logsFetching,
+    error: logsError,
+  } = useFetchLogsList(filters);
 
-  useEffect(() => {
-    loadLogs();
-  }, [filters]);
+  const deleteLog = useDeleteFetchLog();
 
-  async function loadFeeds() {
-    try {
-      const data = await feedsApi.getAll();
-      setFeeds(data);
-    } catch (err) {
-      console.error('Failed to load feeds:', err);
-    }
-  }
-
-  async function loadLogs() {
-    try {
-      setLoading(true);
-      const params = {};
-      if (filters.feed_id) params.feed_id = filters.feed_id;
-      if (filters.status) params.status = filters.status;
-
-      const data = await fetchLogsApi.getAll(params);
-      setLogs(data);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const isLoading = feedsLoading || logsLoading;
+  const error = feedsError || logsError;
+  const isMutating = deleteLog.isPending;
 
   async function handleDelete(id) {
     if (!confirm('Are you sure you want to delete this log?')) return;
     try {
-      await fetchLogsApi.delete(id);
-      loadLogs();
+      await deleteLog.mutateAsync(id);
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
@@ -71,7 +50,7 @@ export default function FetchLogs() {
     });
   }
 
-  if (loading) return <div className="loading">Loading fetch logs...</div>;
+  if (isLoading) return <div className="loading">Loading fetch logs...</div>;
 
   return (
     <div className="page">
@@ -80,7 +59,9 @@ export default function FetchLogs() {
         <div className="log-count">{logs.length} logs found</div>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {logsFetching && !logsLoading && <div className="badge">Refreshing...</div>}
+
+      {error && <div className="error">{error.message}</div>}
 
       <div className="filters card">
         <h3>Filters</h3>
@@ -143,7 +124,7 @@ export default function FetchLogs() {
                   {log.error_message || '-'}
                 </td>
                 <td className="actions">
-                  <button className="button-sm danger" onClick={() => handleDelete(log.id)}>
+                  <button className="button-sm danger" onClick={() => handleDelete(log.id)} disabled={isMutating}>
                     Delete
                   </button>
                 </td>
@@ -153,7 +134,7 @@ export default function FetchLogs() {
         </table>
       </div>
 
-      {logs.length === 0 && !loading && (
+      {logs.length === 0 && !isLoading && (
         <div className="empty-state">
           <p>No fetch logs found. Logs are automatically created when feeds are fetched.</p>
         </div>
