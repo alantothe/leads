@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from typing import List, Optional, Dict
+from urllib.parse import urlparse
+import requests
 
 from features.instagram_feeds.schema.models import (
     InstagramFeedCreate, InstagramFeedUpdate, InstagramFeedResponse,
@@ -12,6 +14,14 @@ from features.instagram_feeds.service.fetcher import (
 from lib.database import fetch_all, fetch_one, execute_query
 
 router = APIRouter(prefix="/instagram-feeds", tags=["instagram-feeds"])
+ALLOWED_MEDIA_HOSTS = ("cdninstagram.com", "fbcdn.net")
+
+def _is_allowed_media_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return False
+    host = parsed.netloc.split(":", 1)[0].lower()
+    return any(host == domain or host.endswith(f".{domain}") for domain in ALLOWED_MEDIA_HOSTS)
 
 # Helper function to get feed with tags
 def get_instagram_feed_with_tags(feed_id: int) -> Optional[dict]:
@@ -145,6 +155,39 @@ def get_instagram_posts(
 
     posts = fetch_all(query, tuple(params))
     return [InstagramPostResponse(**post) for post in posts]
+
+@router.get("/posts/{post_id}/image")
+def get_instagram_post_image(post_id: int):
+    """Proxy Instagram image URLs to avoid cross-origin blocking."""
+    post = fetch_one(
+        "SELECT media_url, thumbnail_url FROM instagram_posts WHERE id = ?",
+        (post_id,)
+    )
+    if not post:
+        raise HTTPException(status_code=404, detail="Instagram post not found")
+
+    image_url = post.get("thumbnail_url") or post.get("media_url")
+    if not image_url:
+        raise HTTPException(status_code=404, detail="Instagram post image not available")
+    if not _is_allowed_media_url(image_url):
+        raise HTTPException(status_code=400, detail="Unsupported media URL")
+
+    try:
+        upstream = requests.get(
+            image_url,
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        upstream.raise_for_status()
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch image: {exc}")
+
+    content_type = upstream.headers.get("Content-Type", "image/jpeg")
+    return Response(
+        content=upstream.content,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"}
+    )
 
 @router.get("/posts/{post_id}", response_model=InstagramPostResponse)
 def get_instagram_post(post_id: int) -> InstagramPostResponse:

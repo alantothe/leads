@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { instagramPostImageUrl } from '../api';
 import {
+  useCategories,
   useFeeds,
   useInstagramFeeds,
   useInstagramPostsList,
@@ -55,7 +56,8 @@ function getTimestamp(value) {
 }
 
 export default function Dashboard() {
-  const [contentFilter, setContentFilter] = useState('all');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [showTranslated, setShowTranslated] = useState(true);
 
   const {
@@ -63,20 +65,34 @@ export default function Dashboard() {
     isLoading: leadsLoading,
     isFetching: leadsFetching,
     error: leadsError,
-  } = useLeadsList({ limit: DASHBOARD_FETCH_LIMIT });
+  } = useLeadsList({
+    limit: DASHBOARD_FETCH_LIMIT,
+    category: categoryFilter,
+    search: searchFilter,
+  });
 
   const {
     data: posts = [],
     isLoading: postsLoading,
     isFetching: postsFetching,
     error: postsError,
-  } = useInstagramPostsList({ limit: DASHBOARD_FETCH_LIMIT });
+  } = useInstagramPostsList({
+    limit: DASHBOARD_FETCH_LIMIT,
+    category: categoryFilter,
+    search: searchFilter,
+  });
 
   const {
     data: feeds = [],
     isLoading: feedsLoading,
     error: feedsError,
   } = useFeeds();
+
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
 
   const {
     data: instagramFeeds = [],
@@ -92,6 +108,18 @@ export default function Dashboard() {
     () => new Map(instagramFeeds.map((feed) => [feed.id, feed.display_name])),
     [instagramFeeds],
   );
+  const feedCategoryIds = useMemo(
+    () => new Map(feeds.map((feed) => [feed.id, feed.category_id])),
+    [feeds],
+  );
+  const instagramFeedCategoryIds = useMemo(
+    () => new Map(instagramFeeds.map((feed) => [feed.id, feed.category_id])),
+    [instagramFeeds],
+  );
+  const categoryNames = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.name])),
+    [categories],
+  );
 
   const combinedItems = useMemo(() => {
     const leadItems = leads.map((lead) => ({ type: 'lead', data: lead }));
@@ -99,18 +127,8 @@ export default function Dashboard() {
     return [...leadItems, ...instagramItems];
   }, [leads, posts]);
 
-  const filteredItems = useMemo(() => {
-    if (contentFilter === 'lead') {
-      return combinedItems.filter((item) => item.type === 'lead');
-    }
-    if (contentFilter === 'instagram') {
-      return combinedItems.filter((item) => item.type === 'instagram');
-    }
-    return combinedItems;
-  }, [combinedItems, contentFilter]);
-
   const sortedItems = useMemo(() => {
-    return [...filteredItems].sort((a, b) => {
+    return [...combinedItems].sort((a, b) => {
       const aDate = a.type === 'lead'
         ? a.data.published || a.data.collected_at
         : a.data.posted_at || a.data.collected_at;
@@ -119,14 +137,13 @@ export default function Dashboard() {
         : b.data.posted_at || b.data.collected_at;
       return getTimestamp(bDate) - getTimestamp(aDate);
     });
-  }, [filteredItems]);
+  }, [combinedItems]);
 
-  const totalCount = leads.length + posts.length;
-  const visibleCount = sortedItems.length;
+  const totalCount = combinedItems.length;
   const isLoading =
-    leadsLoading || postsLoading || feedsLoading || instagramFeedsLoading;
+    leadsLoading || postsLoading || feedsLoading || instagramFeedsLoading || categoriesLoading;
   const isFetching = leadsFetching || postsFetching;
-  const error = leadsError || postsError || feedsError || instagramFeedsError;
+  const error = leadsError || postsError || feedsError || instagramFeedsError || categoriesError;
 
   function renderLeadCard(lead) {
     const displayTitle = showTranslated && lead.title_translated
@@ -142,6 +159,9 @@ export default function Dashboard() {
     const languageLabel = lead.detected_language && lead.detected_language !== 'en'
       ? lead.detected_language.toUpperCase()
       : null;
+
+    const categoryName =
+      categoryNames.get(feedCategoryIds.get(lead.feed_id)) || categoryFilter || 'Unknown';
 
     return (
       <div key={`lead-${lead.id}`} className="lead-card">
@@ -162,9 +182,10 @@ export default function Dashboard() {
             {isTranslated && <span className="badge translation-badge">Translated</span>}
             {languageLabel && <span className="badge language-badge">{languageLabel}</span>}
           </h3>
-          <span className="badge">RSS Lead</span>
+          <span className="badge">Article</span>
         </div>
         <div className="lead-meta">
+          <span className="badge">{categoryName}</span>
           <span className="badge">{feedNames.get(lead.feed_id) || 'Unknown Feed'}</span>
           {lead.author && <span>By {lead.author}</span>}
           <span>
@@ -194,7 +215,13 @@ export default function Dashboard() {
       : null;
     const mediaUrl = post.media_url || post.thumbnail_url;
     const showVideo = post.media_type === 'video' && post.media_url;
+    const imageUrl = mediaUrl ? instagramPostImageUrl(post.id) : null;
+    const posterUrl = post.thumbnail_url ? instagramPostImageUrl(post.id) : null;
     const usernameLabel = post.username ? `@${post.username}` : 'Instagram post';
+    const categoryName =
+      categoryNames.get(instagramFeedCategoryIds.get(post.instagram_feed_id))
+      || categoryFilter
+      || 'Unknown';
 
     return (
       <div key={`instagram-${post.id}`} className="lead-card">
@@ -210,9 +237,10 @@ export default function Dashboard() {
             {isTranslated && <span className="badge translation-badge">Translated</span>}
             {languageLabel && <span className="badge language-badge">{languageLabel}</span>}
           </h3>
-          <span className="badge">Instagram Post</span>
+          <span className="badge instagram">Instagram Post</span>
         </div>
         <div className="lead-meta">
+          <span className="badge">{categoryName}</span>
           <span className="badge">
             {instagramFeedNames.get(post.instagram_feed_id) || 'Unknown Feed'}
           </span>
@@ -223,14 +251,14 @@ export default function Dashboard() {
           </span>
         </div>
 
-        {mediaUrl && (
+        {imageUrl && (
           <div className="instagram-media">
             {showVideo ? (
-              <video controls poster={post.thumbnail_url}>
+              <video controls poster={posterUrl || undefined}>
                 <source src={post.media_url} type="video/mp4" />
               </video>
             ) : (
-              <img src={mediaUrl} alt="Instagram post" loading="lazy" />
+              <img src={imageUrl} alt="Instagram post" loading="lazy" />
             )}
           </div>
         )}
@@ -254,9 +282,9 @@ export default function Dashboard() {
     );
   }
 
-  const emptyMessage = contentFilter === 'all'
-    ? 'No approved content yet. Review pending items in the approval queue.'
-    : 'No approved content matches this filter.';
+  const emptyMessage = categoryFilter || searchFilter
+    ? 'No approved content matches your filters.'
+    : 'No approved content yet. Review pending items in the approval queue.';
 
   return (
     <div className="page">
@@ -265,26 +293,30 @@ export default function Dashboard() {
       {error && <div className="error">{error.message}</div>}
 
       <div className="filters card">
-        <h3>Content Filters</h3>
-        <div className="filter-tabs">
-          <button
-            className={contentFilter === 'all' ? 'active' : ''}
-            onClick={() => setContentFilter('all')}
-          >
-            All ({totalCount})
-          </button>
-          <button
-            className={contentFilter === 'lead' ? 'active' : ''}
-            onClick={() => setContentFilter('lead')}
-          >
-            RSS Leads ({leads.length})
-          </button>
-          <button
-            className={contentFilter === 'instagram' ? 'active' : ''}
-            onClick={() => setContentFilter('instagram')}
-          >
-            Instagram ({posts.length})
-          </button>
+        <h3>Filters</h3>
+        <div className="filters-grid">
+          <div className="form-group">
+            <label>Search</label>
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search titles, summaries, captions, usernames..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Category</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              disabled={categoriesLoading}
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { instagramPostImageUrl } from '../api';
 import {
   useCategories,
   useInstagramFeeds,
   useInstagramPostsList,
   useTags,
   useDeleteInstagramPost,
-  useTranslateInstagramPosts,
 } from '../hooks';
 import { useDialog } from '../providers/DialogProvider';
 
@@ -17,7 +17,6 @@ export default function InstagramPosts() {
     tag: '',
     instagram_feed_id: '',
   });
-  const [showTranslated, setShowTranslated] = useState(true); // Default to showing English
   const dialog = useDialog();
 
   const {
@@ -43,11 +42,10 @@ export default function InstagramPosts() {
   } = useTags();
 
   const deletePost = useDeleteInstagramPost();
-  const translatePosts = useTranslateInstagramPosts();
 
   const isLoading = postsLoading || feedsLoading || categoriesLoading || tagsLoading;
   const error = postsError || feedsError || categoriesError || tagsError;
-  const isMutating = deletePost.isPending || translatePosts.isPending;
+  const isMutating = deletePost.isPending;
 
   async function handleDelete(id) {
     const confirmed = await dialog.confirm('Are you sure you want to delete this Instagram post?');
@@ -83,18 +81,6 @@ export default function InstagramPosts() {
     return num;
   }
 
-  async function handleTranslate() {
-    const confirmed = await dialog.confirm('Translate all pending Instagram posts to English?');
-    if (!confirmed) return;
-    try {
-      const result = await translatePosts.mutateAsync(filters);
-      await dialog.alert(
-        `Translation complete!\n${result.stats.translated} translated\n${result.stats.already_english} already in English`,
-      );
-    } catch (err) {
-      await dialog.alert(`Error: ${err.message}`);
-    }
-  }
 
   return (
     <div className="page">
@@ -164,42 +150,20 @@ export default function InstagramPosts() {
         </button>
       </div>
 
-      <div className="translation-controls card">
-        <div className="translation-header">
-          <h3>Translation</h3>
-          <button
-            className="button primary"
-            onClick={handleTranslate}
-            disabled={translatePosts.isPending}
-          >
-            {translatePosts.isPending ? 'Translating...' : 'Translate Pending Posts'}
-          </button>
-        </div>
-        <div className="form-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={showTranslated}
-              onChange={(e) => setShowTranslated(e.target.checked)}
-            />
-            Show English (translated when available)
-          </label>
-        </div>
-      </div>
 
       {isLoading ? (
         <div className="loading">Loading Instagram posts...</div>
       ) : (
         <div className="leads-list">
           {posts.map((post) => {
-            // Determine which caption to show based on toggle and availability
-            const displayCaption = showTranslated && post.caption_translated
-              ? post.caption_translated
-              : post.caption;
+            // Show translated caption when available, otherwise show original
+            const displayCaption = post.caption_translated || post.caption;
 
             const isTranslated = post.translation_status === 'translated';
             const mediaUrl = post.media_url || post.thumbnail_url;
             const showVideo = post.media_type === 'video' && post.media_url;
+            const imageUrl = mediaUrl ? instagramPostImageUrl(post.id) : null;
+            const posterUrl = post.thumbnail_url ? instagramPostImageUrl(post.id) : null;
 
             return (
               <div key={post.id} className="lead-card instagram-post-card">
@@ -221,14 +185,14 @@ export default function InstagramPosts() {
                   </button>
                 </div>
 
-                {mediaUrl && (
+                {imageUrl && (
                   <div className="instagram-media">
                     {showVideo ? (
-                      <video controls poster={post.thumbnail_url}>
+                      <video controls poster={posterUrl || undefined}>
                         <source src={post.media_url} type="video/mp4" />
                       </video>
                     ) : (
-                      <img src={mediaUrl} alt="Instagram post" />
+                      <img src={imageUrl} alt="Instagram post" />
                     )}
                   </div>
                 )}
@@ -247,9 +211,6 @@ export default function InstagramPosts() {
               <div className="lead-footer">
                 <small>Posted: {post.posted_at ? new Date(post.posted_at).toLocaleDateString() : 'Unknown'}</small>
                 <small>Collected: {new Date(post.collected_at).toLocaleString()}</small>
-                {!showTranslated && post.caption_translated && (
-                  <small className="translation-hint">English translation available</small>
-                )}
               </div>
             </div>
             );

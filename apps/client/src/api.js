@@ -1,4 +1,8 @@
-const API_BASE = 'http://localhost:8000';
+export const API_BASE = 'http://localhost:8000';
+
+export function instagramPostImageUrl(postId) {
+  return `${API_BASE}/instagram-feeds/posts/${postId}/image`;
+}
 
 async function request(endpoint, options = {}) {
   const response = await fetch(`${API_BASE}${endpoint}`, {

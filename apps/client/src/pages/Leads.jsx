@@ -202,7 +202,7 @@ export default function Leads() {
       <div className="page-header">
         <h1>Leads</h1>
         <div className="page-actions">
-          <Link to="/feeds" className="button secondary">Manage RSS Feeds</Link>
+          <Link to="/feeds" className="button secondary">Manage Article Feeds</Link>
         </div>
         <div className="lead-count">{leads.length} leads found</div>
       </div>
@@ -328,7 +328,7 @@ export default function Leads() {
                   </button>
                 </div>
                 <div className="lead-meta">
-                  <span className="badge">{getFeedName(lead.feed_id)}</span>
+                  <span className={`badge ${getFeedName(lead.feed_id).toLowerCase().includes('instagram') ? 'instagram' : ''}`}>{getFeedName(lead.feed_id)}</span>
                   {lead.author && <span>By {lead.author}</span>}
                   {lead.published && <span>{new Date(lead.published).toLocaleDateString()}</span>}
                 </div>

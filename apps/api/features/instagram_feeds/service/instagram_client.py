@@ -109,27 +109,52 @@ def _determine_media_type(item: Dict) -> str:
         return "carousel"
     return "unknown"
 
+def _get_primary_media_item(item: Dict) -> Dict:
+    """Pick a stable media node, preferring the first carousel item."""
+    carousel_media = item.get("carousel_media")
+    if isinstance(carousel_media, list) and carousel_media:
+        return carousel_media[0]
+    return item
+
 def _extract_media_url(item: Dict) -> str:
     """Extract primary media URL from post item."""
-    # Try video URL first, then image
-    video_versions = item.get("video_versions", [])
-    if video_versions and isinstance(video_versions, list) and len(video_versions) > 0:
-        return video_versions[0].get("url", "")
+    media_item = _get_primary_media_item(item)
+    media_type = item.get("media_type")
 
-    # Try image versions
-    image_versions = item.get("image_versions2", {}).get("candidates", [])
+    # Only prefer video URLs for true video posts; carousels should show an image.
+    if media_type == 2:
+        video_versions = media_item.get("video_versions", [])
+        if video_versions and isinstance(video_versions, list):
+            url = video_versions[0].get("url", "")
+            if url:
+                return url
+
+    # Try image versions (works for images, carousels, and video posters)
+    image_versions = media_item.get("image_versions2", {}).get("candidates", [])
     if image_versions and isinstance(image_versions, list) and len(image_versions) > 0:
-        return image_versions[0].get("url", "")
+        url = image_versions[0].get("url", "")
+        if url:
+            return url
 
     # Fallback to thumbnail or display URL
-    return item.get("thumbnail_url", "") or item.get("display_url", "")
+    for key in ("thumbnail_url", "display_url"):
+        url = media_item.get(key) or item.get(key)
+        if url:
+            return url
+
+    return ""
 
 def _extract_thumbnail(item: Dict) -> Optional[str]:
     """Extract thumbnail URL for videos."""
-    if item.get("media_type") == 2:  # Video
-        image_versions = item.get("image_versions2", {}).get("candidates", [])
+    media_item = _get_primary_media_item(item)
+    media_type = media_item.get("media_type", item.get("media_type"))
+    if media_type == 2:  # Video
+        image_versions = media_item.get("image_versions2", {}).get("candidates", [])
         if image_versions and isinstance(image_versions, list) and len(image_versions) > 0:
-            return image_versions[0].get("url")
+            url = image_versions[0].get("url")
+            if url:
+                return url
+        return media_item.get("thumbnail_url") or media_item.get("display_url") or item.get("thumbnail_url")
     return None
 
 def _parse_timestamp(timestamp: Optional[int]) -> Optional[str]:

@@ -175,7 +175,7 @@ export default function Feeds() {
             </select>
           </div>
           <div className="form-group">
-            <label>RSS URL *</label>
+            <label>Article URL *</label>
             <input
               type="url"
               value={formData.url}

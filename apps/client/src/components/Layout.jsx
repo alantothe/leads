@@ -7,15 +7,14 @@ export default function Layout() {
       <nav className="navbar">
         <div className="nav-brand">
           <Link to="/" className="nav-brand-link">
-            <h1>RSS Leads Manager</h1>
+            <h1>Articles Manager</h1>
           </Link>
         </div>
         <div className="nav-links">
           <Link to="/approval" className="nav-link-approval">Approval Queue</Link>
-          <Link to="/subreddit-browser">Subreddit Browser</Link>
-          <Link to="/leads">RSS Leads</Link>
-          <Link to="/instagram-posts">IG Posts</Link>
-          <Link to="/logs">Fetch Logs</Link>
+          <Link to="/subreddit-browser">Reddit</Link>
+          <Link to="/leads">Articles</Link>
+          <Link to="/instagram-posts">Instagram</Link>
         </div>
         <div className="nav-actions">
           <Link to="/settings" className="nav-link-icon" aria-label="Settings" title="Settings">
@@ -30,15 +29,8 @@ export default function Layout() {
               aria-hidden="true"
               focusable="false"
             >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="M4.93 4.93l1.41 1.41" />
-              <path d="M17.66 17.66l1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="M4.93 19.07l1.41-1.41" />
-              <path d="M17.66 6.34l1.41-1.41" />
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </Link>
         </div>
