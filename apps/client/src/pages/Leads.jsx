@@ -285,16 +285,6 @@ export default function Leads() {
             </button>
           </div>
         </div>
-        <div className="form-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={showTranslated}
-              onChange={(e) => setShowTranslated(e.target.checked)}
-            />
-            Show English (translated when available)
-          </label>
-        </div>
       </div>
 
       {isLoading ? (

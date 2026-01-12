@@ -13,6 +13,8 @@ function buildInstagramParams(filters) {
   if (filters?.category) params.category = filters.category;
   if (filters?.tag) params.tag = filters.tag;
   if (filters?.instagram_feed_id) params.instagram_feed_id = filters.instagram_feed_id;
+  if (filters?.limit != null && filters.limit !== '') params.limit = filters.limit;
+  if (filters?.offset != null && filters.offset !== '') params.offset = filters.offset;
   return params;
 }
 

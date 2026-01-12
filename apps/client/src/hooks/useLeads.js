@@ -13,6 +13,9 @@ function buildLeadParams(filters) {
   if (filters?.category) params.category = filters.category;
   if (filters?.tag) params.tag = filters.tag;
   if (filters?.feed_id) params.feed_id = filters.feed_id;
+  if (filters?.sort) params.sort = filters.sort;
+  if (filters?.limit != null && filters.limit !== '') params.limit = filters.limit;
+  if (filters?.offset != null && filters.offset !== '') params.offset = filters.offset;
   return params;
 }
 

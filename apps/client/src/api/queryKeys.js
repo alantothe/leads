@@ -19,13 +19,24 @@ export const queryKeys = {
   leadsByFeed: (feedId) => ['leads', 'feed', feedId],
   leadsByTag: (tagName) => ['leads', 'tag', tagName],
   leadsByCategory: (categoryName) => ['leads', 'category', categoryName],
-  leadsList: ({ search = '', category = '', tag = '', feed_id = '' } = {}) => [
+  leadsList: ({
+    search = '',
+    category = '',
+    tag = '',
+    feed_id = '',
+    limit = '',
+    sort = '',
+    offset = '',
+  } = {}) => [
     'leads',
     'list',
     search || '',
     category || '',
     tag || '',
     feed_id || '',
+    limit ?? '',
+    sort || '',
+    offset ?? '',
   ],
 
   // Fetch Logs
@@ -44,13 +55,22 @@ export const queryKeys = {
   instagramFeed: (id) => ['instagramFeeds', id],
   instagramPosts: ['instagramPosts'],
   instagramPost: (id) => ['instagramPosts', id],
-  instagramPostsList: ({ search = '', category = '', tag = '', instagram_feed_id = '' } = {}) => [
+  instagramPostsList: ({
+    search = '',
+    category = '',
+    tag = '',
+    instagram_feed_id = '',
+    limit = '',
+    offset = '',
+  } = {}) => [
     'instagramPosts',
     'list',
     search || '',
     category || '',
     tag || '',
     instagram_feed_id || '',
+    limit ?? '',
+    offset ?? '',
   ],
 
   // Subreddits
