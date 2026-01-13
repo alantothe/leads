@@ -588,6 +588,12 @@ td {
   gap: 1rem;
 }
 
+.load-more {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
 .lead-card {
   background: var(--card-bg);
   border: 1px solid var(--border);

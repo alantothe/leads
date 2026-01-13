@@ -97,6 +97,19 @@ export const queryKeys = {
     limit ?? '',
     offset ?? '',
   ],
+  elComercioPostsInfinite: ({
+    search = '',
+    el_comercio_feed_id = '',
+    approval_status = '',
+    limit = '',
+  } = {}) => [
+    'elComercioPosts',
+    'infinite',
+    search || '',
+    el_comercio_feed_id || '',
+    approval_status || '',
+    limit ?? '',
+  ],
 
   // Approval Queue
   approvalPending: (contentType = 'all') => ['approval', 'pending', contentType || 'all'],

@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   useElComercioFeeds,
-  useElComercioPostsList,
+  useInfiniteElComercioPostsList,
   useDeleteElComercioPost,
   useFetchAllElComercioFeeds,
 } from '../hooks';
 import { useDialog } from '../providers/DialogProvider';
+
+const PAGE_SIZE = 30;
 
 export default function ElComercioPosts() {
   const [filters, setFilters] = useState({
@@ -17,11 +19,15 @@ export default function ElComercioPosts() {
   const dialog = useDialog();
 
   const {
-    data: posts = [],
+    data,
     isLoading: postsLoading,
     isFetching: postsFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
     error: postsError,
-  } = useElComercioPostsList(filters);
+  } = useInfiniteElComercioPostsList(filters, PAGE_SIZE);
+  const posts = data?.pages.flat() ?? [];
   const {
     data: feeds = [],
     isLoading: feedsLoading,
@@ -34,6 +40,26 @@ export default function ElComercioPosts() {
   const isLoading = postsLoading || feedsLoading;
   const error = postsError || feedsError;
   const isMutating = deletePost.isPending || fetchAllFeeds.isPending;
+  const isRefreshing = postsFetching && !postsLoading && !isFetchingNextPage;
+  const loadMoreRef = useRef(null);
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    const node = loadMoreRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   async function handleDelete(id) {
     const confirmed = await dialog.confirm('Are you sure you want to delete this article?');
@@ -100,7 +126,7 @@ export default function ElComercioPosts() {
         <div className="lead-count">{posts.length} approved articles</div>
       </div>
 
-      {postsFetching && !postsLoading && <div className="badge">Refreshing...</div>}
+      {isRefreshing && <div className="badge">Refreshing...</div>}
 
       {error && <div className="error">{error.message}</div>}
 
@@ -219,6 +245,18 @@ export default function ElComercioPosts() {
               );
             })
           )}
+        </div>
+      )}
+
+      {hasNextPage && (
+        <div className="load-more" ref={loadMoreRef}>
+          <button
+            className="button secondary"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? 'Loading more...' : 'Load more articles'}
+          </button>
         </div>
       )}
     </div>

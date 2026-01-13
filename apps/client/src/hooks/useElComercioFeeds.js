@@ -104,6 +104,7 @@ export function useFetchElComercioFeed() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.elComercioFeeds });
       queryClient.invalidateQueries({ queryKey: ['elComercioPosts', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['elComercioPosts', 'infinite'] });
       queryClient.invalidateQueries({ queryKey: ['approval'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },
@@ -118,6 +119,7 @@ export function useFetchAllElComercioFeeds() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.elComercioFeeds });
       queryClient.invalidateQueries({ queryKey: ['elComercioPosts', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['elComercioPosts', 'infinite'] });
       queryClient.invalidateQueries({ queryKey: ['approval'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { instagramPostImageUrl } from '../api';
 import {
   useCategories,
@@ -7,10 +7,11 @@ import {
   useInstagramPostsList,
   useLeadsList,
   useElComercioFeeds,
-  useElComercioPostsList,
+  useInfiniteElComercioPostsList,
 } from '../hooks';
 
 const DASHBOARD_FETCH_LIMIT = 1000;
+const EL_COMERCIO_PAGE_SIZE = 30;
 const SUMMARY_SUFFIX_RE = /\s*The post\b[\s\S]*?\bfirst appeared on\b[\s\S]*$/i;
 
 // Language code to full name mapping (ISO 639-1)
@@ -168,15 +169,22 @@ export default function Dashboard() {
   } = useInstagramFeeds();
 
   const {
-    data: elComercioPosts = [],
+    data: elComercioPostsData,
     isLoading: elComercioPostsLoading,
     isFetching: elComercioPostsFetching,
+    isFetchingNextPage: elComercioPostsFetchingNextPage,
+    fetchNextPage: fetchNextElComercioPosts,
+    hasNextPage: hasMoreElComercioPosts,
     error: elComercioPostsError,
-  } = useElComercioPostsList({
-    limit: DASHBOARD_FETCH_LIMIT,
-    approval_status: 'approved',
-    search: searchFilter,
-  });
+  } = useInfiniteElComercioPostsList(
+    {
+      approval_status: 'approved',
+      search: searchFilter,
+    },
+    EL_COMERCIO_PAGE_SIZE
+  );
+
+  const elComercioPosts = elComercioPostsData?.pages.flat() ?? [];
 
   const {
     data: elComercioFeeds = [],
@@ -236,9 +244,29 @@ export default function Dashboard() {
   const isLoading =
     leadsLoading || postsLoading || feedsLoading || instagramFeedsLoading || categoriesLoading ||
     elComercioPostsLoading || elComercioFeedsLoading;
-  const isFetching = leadsFetching || postsFetching || elComercioPostsFetching;
+  const isFetching = leadsFetching || postsFetching ||
+    (elComercioPostsFetching && !elComercioPostsFetchingNextPage);
   const error = leadsError || postsError || feedsError || instagramFeedsError || categoriesError ||
     elComercioPostsError || elComercioFeedsError;
+  const loadMoreRef = useRef(null);
+
+  useEffect(() => {
+    if (!hasMoreElComercioPosts || elComercioPostsFetchingNextPage) return;
+    const node = loadMoreRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          fetchNextElComercioPosts();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchNextElComercioPosts, hasMoreElComercioPosts, elComercioPostsFetchingNextPage]);
 
   function renderLeadCard(lead) {
     const displayTitle = showTranslated && lead.title_translated
@@ -512,6 +540,18 @@ export default function Dashboard() {
             if (item.type === 'el_comercio') return renderElComercioCard(item.data);
             return null;
           })}
+        </div>
+      )}
+
+      {hasMoreElComercioPosts && (
+        <div className="load-more" ref={loadMoreRef}>
+          <button
+            className="button secondary"
+            onClick={() => fetchNextElComercioPosts()}
+            disabled={elComercioPostsFetchingNextPage}
+          >
+            {elComercioPostsFetchingNextPage ? 'Loading more...' : 'Load more El Comercio articles'}
+          </button>
         </div>
       )}
 

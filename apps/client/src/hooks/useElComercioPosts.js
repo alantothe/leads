@@ -1,5 +1,6 @@
 import {
   keepPreviousData,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -25,6 +26,22 @@ export function useElComercioPostsList(filters) {
   });
 }
 
+export function useInfiniteElComercioPostsList(filters, limit = 30) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.elComercioPostsInfinite({ ...filters, limit }),
+    queryFn: ({ pageParam = 0 }) => elComercioPostsApi.getAll(
+      buildElComercioParams({ ...filters, limit, offset: pageParam })
+    ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!Array.isArray(lastPage) || lastPage.length < limit) {
+        return undefined;
+      }
+      return allPages.length * limit;
+    },
+  });
+}
+
 export function useDeleteElComercioPost() {
   const queryClient = useQueryClient();
 
@@ -32,22 +49,40 @@ export function useDeleteElComercioPost() {
     mutationFn: (id) => elComercioPostsApi.delete(id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['elComercioPosts', 'list'] });
+      await queryClient.cancelQueries({ queryKey: ['elComercioPosts', 'infinite'] });
       const previous = queryClient.getQueriesData({ queryKey: ['elComercioPosts', 'list'] });
+      const previousInfinite = queryClient.getQueriesData({ queryKey: ['elComercioPosts', 'infinite'] });
 
       queryClient.setQueriesData({ queryKey: ['elComercioPosts', 'list'] }, (old) =>
         Array.isArray(old) ? old.filter((item) => item.id !== id) : old
       );
+      queryClient.setQueriesData({ queryKey: ['elComercioPosts', 'infinite'] }, (old) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) =>
+            Array.isArray(page) ? page.filter((item) => item.id !== id) : page
+          ),
+        };
+      });
 
-      return { previous };
+      return { previous, previousInfinite };
     },
     onError: (_err, _id, context) => {
-      if (!context?.previous) return;
-      context.previous.forEach(([key, data]) => {
-        queryClient.setQueryData(key, data);
-      });
+      if (context?.previous) {
+        context.previous.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+      if (context?.previousInfinite) {
+        context.previousInfinite.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['elComercioPosts', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['elComercioPosts', 'infinite'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },
   });
