@@ -139,6 +139,32 @@ export const instagramPostsApi = {
   delete: (id) => request(`/instagram-feeds/posts/${id}`, { method: 'DELETE' }),
 };
 
+// El Comercio Feeds API
+export const elComercioFeedsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/el-comercio-feeds${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/el-comercio-feeds/${id}`),
+  create: (data) => request('/el-comercio-feeds', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/el-comercio-feeds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  activate: (id) => request(`/el-comercio-feeds/${id}/activate`, { method: 'PATCH' }),
+  deactivate: (id) => request(`/el-comercio-feeds/${id}/deactivate`, { method: 'PATCH' }),
+  delete: (id) => request(`/el-comercio-feeds/${id}`, { method: 'DELETE' }),
+  fetch: (id) => request(`/el-comercio-feeds/${id}/fetch`, { method: 'POST' }),
+  fetchAll: () => request('/el-comercio-feeds/fetch-all', { method: 'POST' }),
+};
+
+// El Comercio Posts API
+export const elComercioPostsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/el-comercio-feeds/posts${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/el-comercio-feeds/posts/${id}`),
+  delete: (id) => request(`/el-comercio-feeds/posts/${id}`, { method: 'DELETE' }),
+};
+
 // Subreddits API
 export const subredditsApi = {
   getAll: (params = {}) => {

@@ -51,7 +51,8 @@ const CONTENT_TYPE_LABELS = {
   lead: 'Article',
   instagram_post: 'Instagram Post',
   reddit_post: 'Reddit Post',
-  telegram_post: 'Telegram Message'
+  telegram_post: 'Telegram Message',
+  el_comercio_post: 'El Comercio Article'
 };
 
 const LANGUAGE_NAMES = {
@@ -259,6 +260,12 @@ export default function ApprovalQueue() {
             onClick={() => setFilter('telegram_post')}
           >
             Telegram ({stats?.telegram_post?.pending || 0})
+          </button>
+          <button
+            className={filter === 'el_comercio_post' ? 'active' : ''}
+            onClick={() => setFilter('el_comercio_post')}
+          >
+            El Comercio ({stats?.el_comercio_post?.pending || 0})
           </button>
         </div>
       </div>

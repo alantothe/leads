@@ -77,6 +77,27 @@ export const queryKeys = {
   subreddits: ['subreddits'],
   subreddit: (id) => ['subreddits', id],
 
+  // El Comercio
+  elComercioFeeds: ['elComercioFeeds'],
+  elComercioFeed: (id) => ['elComercioFeeds', id],
+  elComercioPosts: ['elComercioPosts'],
+  elComercioPost: (id) => ['elComercioPosts', id],
+  elComercioPostsList: ({
+    search = '',
+    el_comercio_feed_id = '',
+    approval_status = '',
+    limit = '',
+    offset = '',
+  } = {}) => [
+    'elComercioPosts',
+    'list',
+    search || '',
+    el_comercio_feed_id || '',
+    approval_status || '',
+    limit ?? '',
+    offset ?? '',
+  ],
+
   // Approval Queue
   approvalPending: (contentType = 'all') => ['approval', 'pending', contentType || 'all'],
   approvalStats: ['approval', 'stats'],

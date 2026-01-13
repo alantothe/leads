@@ -135,6 +135,35 @@ async def get_pending_content(
             'translation_status': post['translation_status'],
         } for post in telegram])
 
+    # Fetch pending El Comercio posts
+    if not content_type or content_type == 'el_comercio_post':
+        el_comercio = fetch_all(
+            """SELECT ecp.id,
+                      COALESCE(NULLIF(ecp.title_translated, ''), ecp.title) AS title,
+                      COALESCE(NULLIF(ecp.excerpt_translated, ''), ecp.excerpt) AS excerpt,
+                      ecp.detected_language,
+                      ecp.translation_status,
+                      ecp.url, ecp.collected_at, ecp.image_url, ecf.display_name
+               FROM el_comercio_posts ecp
+               JOIN el_comercio_feeds ecf ON ecp.el_comercio_feed_id = ecf.id
+               WHERE ecp.approval_status = 'pending'
+               ORDER BY ecp.collected_at DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        items.extend([{
+            'content_type': 'el_comercio_post',
+            'content_id': post['id'],
+            'title': post['title'],
+            'summary': post['excerpt'],
+            'source_name': post['display_name'],
+            'collected_at': post['collected_at'],
+            'image_url': post['image_url'],
+            'link': post['url'],
+            'detected_language': post['detected_language'],
+            'translation_status': post['translation_status'],
+        } for post in el_comercio])
+
     # Sort all items by collected_at descending
     items.sort(key=lambda x: x['collected_at'], reverse=True)
 
@@ -150,7 +179,8 @@ async def approve_content(request: ApprovalRequest):
         'lead': 'leads',
         'instagram_post': 'instagram_posts',
         'reddit_post': 'reddit_posts',
-        'telegram_post': 'telegram_posts'
+        'telegram_post': 'telegram_posts',
+        'el_comercio_post': 'el_comercio_posts'
     }
 
     table = table_map.get(request.content_type)
@@ -182,7 +212,8 @@ async def batch_approve_content(request: BatchApprovalRequest):
                 'lead': 'leads',
                 'instagram_post': 'instagram_posts',
                 'reddit_post': 'reddit_posts',
-                'telegram_post': 'telegram_posts'
+                'telegram_post': 'telegram_posts',
+                'el_comercio_post': 'el_comercio_posts'
             }
 
             table = table_map.get(item.content_type)
@@ -232,7 +263,8 @@ async def get_approval_stats():
         'leads': 'lead',
         'instagram_posts': 'instagram_post',
         'reddit_posts': 'reddit_post',
-        'telegram_posts': 'telegram_post'
+        'telegram_posts': 'telegram_post',
+        'el_comercio_posts': 'el_comercio_post'
     }
 
     for table, content_type in tables.items():

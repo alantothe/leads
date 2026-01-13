@@ -5,9 +5,11 @@ import Settings from './pages/Settings';
 import Categories from './pages/Categories';
 import Feeds from './pages/Feeds';
 import InstagramFeeds from './pages/InstagramFeeds';
+import ElComercioFeeds from './pages/ElComercioFeeds';
 import Tags from './pages/Tags';
 import Leads from './pages/Leads';
 import InstagramPosts from './pages/InstagramPosts';
+import ElComercioPosts from './pages/ElComercioPosts';
 import Subreddits from './pages/Subreddits';
 import SubredditBrowser from './pages/SubredditBrowser';
 import FetchLogs from './pages/FetchLogs';
@@ -24,11 +26,13 @@ export default function App() {
           <Route path="categories" element={<Categories />} />
           <Route path="feeds" element={<Feeds />} />
           <Route path="instagram-feeds" element={<InstagramFeeds />} />
+          <Route path="el-comercio-feeds" element={<ElComercioFeeds />} />
           <Route path="subreddits" element={<Subreddits />} />
           <Route path="subreddit-browser" element={<SubredditBrowser />} />
           <Route path="tags" element={<Tags />} />
           <Route path="leads" element={<Leads />} />
           <Route path="instagram-posts" element={<InstagramPosts />} />
+          <Route path="el-comercio-posts" element={<ElComercioPosts />} />
           <Route path="logs" element={<FetchLogs />} />
         </Route>
       </Routes>

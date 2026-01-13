@@ -505,5 +505,83 @@ def init_database():
     add_approval_columns()
 
 
+def add_el_comercio_tables():
+    """Add El Comercio scraping tables."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    # Table 1: Feed configuration
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS el_comercio_feeds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            url TEXT UNIQUE NOT NULL,
+            display_name TEXT NOT NULL,
+            section TEXT NOT NULL,
+            fetch_interval INTEGER DEFAULT 60,
+            last_fetched TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id)
+        )
+    """)
+
+    # Table 2: Scraped articles
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS el_comercio_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            el_comercio_feed_id INTEGER NOT NULL,
+            url TEXT UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            published_at TEXT,
+            section TEXT DEFAULT 'gastronomia',
+            image_url TEXT,
+            excerpt TEXT,
+            language TEXT DEFAULT 'es',
+            source TEXT DEFAULT 'elcomercio',
+            collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            title_translated TEXT,
+            excerpt_translated TEXT,
+            detected_language TEXT,
+            translation_status TEXT DEFAULT 'pending',
+            translated_at TEXT,
+            approval_status TEXT DEFAULT 'pending',
+            approved_by TEXT,
+            approved_at TEXT,
+            approval_notes TEXT,
+            FOREIGN KEY (el_comercio_feed_id) REFERENCES el_comercio_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Table 3: Tag mapping
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS el_comercio_feed_tag_map (
+            el_comercio_feed_id INTEGER,
+            tag_id INTEGER,
+            PRIMARY KEY (el_comercio_feed_id, tag_id),
+            FOREIGN KEY (el_comercio_feed_id) REFERENCES el_comercio_feeds(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES feed_tags(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Table 4: Fetch logs
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS el_comercio_fetch_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            el_comercio_feed_id INTEGER NOT NULL,
+            fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            status TEXT,
+            post_count INTEGER,
+            error_message TEXT,
+            FOREIGN KEY (el_comercio_feed_id) REFERENCES el_comercio_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+    print("✅ El Comercio tables created")
+
+
 if __name__ == "__main__":
     init_database()
+    add_el_comercio_tables()

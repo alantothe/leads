@@ -6,6 +6,8 @@ import {
   useInstagramFeeds,
   useInstagramPostsList,
   useLeadsList,
+  useElComercioFeeds,
+  useElComercioPostsList,
 } from '../hooks';
 
 const DASHBOARD_FETCH_LIMIT = 1000;
@@ -165,6 +167,23 @@ export default function Dashboard() {
     error: instagramFeedsError,
   } = useInstagramFeeds();
 
+  const {
+    data: elComercioPosts = [],
+    isLoading: elComercioPostsLoading,
+    isFetching: elComercioPostsFetching,
+    error: elComercioPostsError,
+  } = useElComercioPostsList({
+    limit: DASHBOARD_FETCH_LIMIT,
+    approval_status: 'approved',
+    search: searchFilter,
+  });
+
+  const {
+    data: elComercioFeeds = [],
+    isLoading: elComercioFeedsLoading,
+    error: elComercioFeedsError,
+  } = useElComercioFeeds();
+
   const feedNames = useMemo(
     () => new Map(feeds.map((feed) => [feed.id, feed.source_name])),
     [feeds],
@@ -181,6 +200,14 @@ export default function Dashboard() {
     () => new Map(instagramFeeds.map((feed) => [feed.id, feed.category_id])),
     [instagramFeeds],
   );
+  const elComercioFeedNames = useMemo(
+    () => new Map(elComercioFeeds.map((feed) => [feed.id, feed.display_name])),
+    [elComercioFeeds],
+  );
+  const elComercioFeedCategoryIds = useMemo(
+    () => new Map(elComercioFeeds.map((feed) => [feed.id, feed.category_id])),
+    [elComercioFeeds],
+  );
   const categoryNames = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
@@ -189,16 +216,17 @@ export default function Dashboard() {
   const combinedItems = useMemo(() => {
     const leadItems = leads.map((lead) => ({ type: 'lead', data: lead }));
     const instagramItems = posts.map((post) => ({ type: 'instagram', data: post }));
-    return [...leadItems, ...instagramItems];
-  }, [leads, posts]);
+    const elComercioItems = elComercioPosts.map((post) => ({ type: 'el_comercio', data: post }));
+    return [...leadItems, ...instagramItems, ...elComercioItems];
+  }, [leads, posts, elComercioPosts]);
 
   const sortedItems = useMemo(() => {
     return [...combinedItems].sort((a, b) => {
-      const aDate = a.type === 'lead'
-        ? a.data.published || a.data.collected_at
+      const aDate = a.type === 'lead' || a.type === 'el_comercio'
+        ? a.data.published || a.data.published_at || a.data.collected_at
         : a.data.posted_at || a.data.collected_at;
-      const bDate = b.type === 'lead'
-        ? b.data.published || b.data.collected_at
+      const bDate = b.type === 'lead' || b.type === 'el_comercio'
+        ? b.data.published || b.data.published_at || b.data.collected_at
         : b.data.posted_at || b.data.collected_at;
       return getTimestamp(bDate) - getTimestamp(aDate);
     });
@@ -206,9 +234,11 @@ export default function Dashboard() {
 
   const totalCount = combinedItems.length;
   const isLoading =
-    leadsLoading || postsLoading || feedsLoading || instagramFeedsLoading || categoriesLoading;
-  const isFetching = leadsFetching || postsFetching;
-  const error = leadsError || postsError || feedsError || instagramFeedsError || categoriesError;
+    leadsLoading || postsLoading || feedsLoading || instagramFeedsLoading || categoriesLoading ||
+    elComercioPostsLoading || elComercioFeedsLoading;
+  const isFetching = leadsFetching || postsFetching || elComercioPostsFetching;
+  const error = leadsError || postsError || feedsError || instagramFeedsError || categoriesError ||
+    elComercioPostsError || elComercioFeedsError;
 
   function renderLeadCard(lead) {
     const displayTitle = showTranslated && lead.title_translated
@@ -365,6 +395,75 @@ export default function Dashboard() {
     );
   }
 
+  function renderElComercioCard(post) {
+    const displayTitle = showTranslated && post.title_translated
+      ? post.title_translated
+      : post.title;
+
+    const displayExcerpt = showTranslated && post.excerpt_translated
+      ? post.excerpt_translated
+      : post.excerpt;
+
+    const isTranslated = post.translation_status === 'translated';
+    const languageLabel = post.detected_language && post.detected_language !== 'en'
+      ? getLanguageName(post.detected_language)
+      : null;
+
+    const categoryName =
+      categoryNames.get(elComercioFeedCategoryIds.get(post.el_comercio_feed_id))
+      || categoryFilter
+      || 'Unknown';
+
+    return (
+      <div key={`el_comercio-${post.id}`} className="lead-card">
+        {post.image_url && (
+          <div className="lead-image">
+            <img src={post.image_url} alt={displayTitle} loading="lazy" />
+          </div>
+        )}
+        <div className="lead-header">
+          <h3>
+            {post.url ? (
+              <a href={post.url} target="_blank" rel="noopener noreferrer">
+                {displayTitle}
+              </a>
+            ) : (
+              displayTitle
+            )}
+          </h3>
+        </div>
+
+        <div className="lead-badges">
+          <span className="badge">El Comercio</span>
+          <span className="badge">{categoryName}</span>
+          <span className="badge">{elComercioFeedNames.get(post.el_comercio_feed_id) || 'Unknown Feed'}</span>
+          {isTranslated && <span className="badge translation-badge">Translated</span>}
+          {languageLabel && (
+            <span className="badge language-badge" data-lang-code={post.detected_language.toUpperCase()}>
+              <span className="language-full">{languageLabel}</span>
+              <span className="language-abbrev">{post.detected_language.toUpperCase()}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="lead-meta">
+          <span>
+            {post.published_at
+              ? `Published: ${formatDate(post.published_at)}`
+              : `Collected: ${formatDate(post.collected_at)}`}
+          </span>
+        </div>
+        {displayExcerpt && <p className="lead-summary">{displayExcerpt}</p>}
+        <div className="lead-footer">
+          <small>Collected: {formatDate(post.collected_at, true)}</small>
+          {!showTranslated && post.title_translated && (
+            <small className="translation-hint">English translation available</small>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const emptyMessage = categoryFilter || searchFilter
     ? 'No approved content matches your filters.'
     : 'No approved content yet. Review pending items in the approval queue.';
@@ -407,9 +506,12 @@ export default function Dashboard() {
         <div className="loading">Loading approved content...</div>
       ) : (
         <div className="leads-list">
-          {sortedItems.map((item) => (
-            item.type === 'lead' ? renderLeadCard(item.data) : renderInstagramCard(item.data)
-          ))}
+          {sortedItems.map((item) => {
+            if (item.type === 'lead') return renderLeadCard(item.data);
+            if (item.type === 'instagram') return renderInstagramCard(item.data);
+            if (item.type === 'el_comercio') return renderElComercioCard(item.data);
+            return null;
+          })}
         </div>
       )}
 
