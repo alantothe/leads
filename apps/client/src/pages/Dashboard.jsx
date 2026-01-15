@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { instagramPostImageUrl } from '../api';
+import { instagramPostImageUrl, youtubePostsApi } from '../api';
 import {
   useCategories,
   useFeeds,
@@ -12,6 +12,7 @@ import {
   useInfiniteElComercioPostsList,
   useYouTubeFeeds,
   useYouTubePostsList,
+  useExtractYouTubeTranscript,
 } from '../hooks';
 
 const DASHBOARD_FETCH_LIMIT = 1000;
@@ -131,6 +132,7 @@ export default function Dashboard() {
   const [searchFilter, setSearchFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showTranslated, setShowTranslated] = useState(true);
+  const [transcriptStates, setTranscriptStates] = useState({});
 
   const {
     data: leads = [],
@@ -164,6 +166,7 @@ export default function Dashboard() {
     category: categoryFilter,
     search: searchFilter,
   });
+  const extractTranscript = useExtractYouTubeTranscript();
 
   const {
     data: feeds = [],
@@ -334,6 +337,31 @@ export default function Dashboard() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [fetchNextElComercioPosts, hasMoreElComercioPosts, elComercioPostsFetchingNextPage]);
+
+  async function handleExtractTranscript(postId) {
+    setTranscriptStates((prev) => ({ ...prev, [postId]: { loading: true } }));
+    try {
+      const result = await extractTranscript.mutateAsync(postId);
+      setTranscriptStates((prev) => ({
+        ...prev,
+        [postId]: {
+          loading: false,
+          status: result.transcript_status,
+          error: result.transcript_error,
+          hasTranscript: !!result.transcript,
+        },
+      }));
+    } catch (err) {
+      setTranscriptStates((prev) => ({
+        ...prev,
+        [postId]: { loading: false, error: err.message },
+      }));
+    }
+  }
+
+  function handleDownloadTranscript(postId) {
+    window.open(youtubePostsApi.downloadTranscriptUrl(postId), '_blank');
+  }
 
   function renderLeadCard(lead) {
     const displayTitle = showTranslated && lead.title_translated
@@ -675,6 +703,56 @@ export default function Dashboard() {
 
         <div className="lead-footer">
           <small>Collected: {formatDate(post.collected_at, true)}</small>
+        </div>
+
+        <div className="transcript-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {(() => {
+            const state = transcriptStates[post.id];
+            const hasExistingTranscript = post.transcript_status === 'completed';
+            const isUnavailable = post.transcript_status === 'unavailable' || state?.status === 'unavailable';
+
+            if (state?.loading) {
+              return <span className="badge">Extracting transcript...</span>;
+            }
+
+            if (hasExistingTranscript || state?.hasTranscript) {
+              return (
+                <button
+                  className="button"
+                  onClick={() => handleDownloadTranscript(post.id)}
+                >
+                  Download Transcript
+                </button>
+              );
+            }
+
+            if (isUnavailable) {
+              return <span className="badge" style={{ background: '#888' }}>No transcript available</span>;
+            }
+
+            if (state?.error && state?.status === 'failed') {
+              return (
+                <>
+                  <span className="badge" style={{ background: '#c00' }}>Failed</span>
+                  <button
+                    className="button secondary"
+                    onClick={() => handleExtractTranscript(post.id)}
+                  >
+                    Retry
+                  </button>
+                </>
+              );
+            }
+
+            return (
+              <button
+                className="button secondary"
+                onClick={() => handleExtractTranscript(post.id)}
+              >
+                Get Transcript
+              </button>
+            );
+          })()}
         </div>
       </div>
     );
