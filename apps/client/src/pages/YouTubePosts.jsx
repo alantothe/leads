@@ -190,7 +190,7 @@ export default function YouTubePosts() {
                           className="button"
                           onClick={() => handleDownloadTranscript(post.id)}
                         >
-                          Download Transcript
+                          Download CSV
                         </button>
                       );
                     }

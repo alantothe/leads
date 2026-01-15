@@ -14,6 +14,7 @@ export default function Layout() {
           <Link to="/approval" className="nav-link-approval">Approval Queue</Link>
           <Link to="/scrapes">Scrapes</Link>
           <Link to="/subreddit-browser">Reddit</Link>
+          <Link to="/categories">Categories</Link>
           <Link to="/leads">Articles</Link>
           <Link to="/instagram-posts">Instagram</Link>
           <Link to="/youtube-posts">YouTube</Link>

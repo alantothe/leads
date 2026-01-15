@@ -22,6 +22,15 @@ export default function YouTubeFeeds() {
     channel_url: '',
     fetch_interval: 60,
     is_active: 1,
+    channel_summary: '',
+    primary_topics: '',
+    audience: '',
+    language_region: '',
+    hosts: '',
+    formats: '',
+    tone_style: '',
+    expertise_background: '',
+    credibility_bias_notes: '',
   });
   const dialog = useDialog();
 
@@ -62,13 +71,38 @@ export default function YouTubeFeeds() {
     return parsed;
   }
 
+  function parseList(value) {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+    return value
+      .split(/[\n,]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  function formatList(value) {
+    if (!Array.isArray(value)) return '';
+    return value.join(', ');
+  }
+
+  function buildPayload(data) {
+    return {
+      ...data,
+      primary_topics: parseList(data.primary_topics),
+      hosts: parseList(data.hosts),
+      formats: parseList(data.formats),
+      tone_style: parseList(data.tone_style),
+    };
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     try {
+      const payload = buildPayload(formData);
       if (editingId) {
-        await updateFeed.mutateAsync({ id: editingId, data: formData });
+        await updateFeed.mutateAsync({ id: editingId, data: payload });
       } else {
-        await createFeed.mutateAsync(formData);
+        await createFeed.mutateAsync(payload);
       }
       handleCancel();
     } catch (err) {
@@ -133,6 +167,15 @@ export default function YouTubeFeeds() {
       channel_url: feed.channel_url || '',
       fetch_interval: feed.fetch_interval,
       is_active: feed.is_active,
+      channel_summary: feed.channel_summary || '',
+      primary_topics: formatList(feed.primary_topics),
+      audience: feed.audience || '',
+      language_region: feed.language_region || '',
+      hosts: formatList(feed.hosts),
+      formats: formatList(feed.formats),
+      tone_style: formatList(feed.tone_style),
+      expertise_background: feed.expertise_background || '',
+      credibility_bias_notes: feed.credibility_bias_notes || '',
     });
     setShowForm(true);
   }
@@ -147,6 +190,15 @@ export default function YouTubeFeeds() {
       channel_url: '',
       fetch_interval: 60,
       is_active: 1,
+      channel_summary: '',
+      primary_topics: '',
+      audience: '',
+      language_region: '',
+      hosts: '',
+      formats: '',
+      tone_style: '',
+      expertise_background: '',
+      credibility_bias_notes: '',
     });
   }
 
@@ -228,6 +280,96 @@ export default function YouTubeFeeds() {
               value={formData.channel_url}
               onChange={(e) => setFormData({ ...formData, channel_url: e.target.value })}
               placeholder="https://www.youtube.com/channel/..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Channel Summary *</label>
+            <textarea
+              value={formData.channel_summary}
+              onChange={(e) => setFormData({ ...formData, channel_summary: e.target.value })}
+              placeholder="Short paragraph summarizing the channel's travel focus and value."
+              rows="3"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Primary Topics *</label>
+            <textarea
+              value={formData.primary_topics}
+              onChange={(e) => setFormData({ ...formData, primary_topics: e.target.value })}
+              placeholder="Destinations, street food, budgeting, safety"
+              rows="2"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Audience *</label>
+            <textarea
+              value={formData.audience}
+              onChange={(e) => setFormData({ ...formData, audience: e.target.value })}
+              placeholder="Who watches and their travel style or budget."
+              rows="2"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Language/Region *</label>
+            <textarea
+              value={formData.language_region}
+              onChange={(e) => setFormData({ ...formData, language_region: e.target.value })}
+              placeholder="Primary language, region focus, currency/measurement."
+              rows="2"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Hosts/Personalities *</label>
+            <textarea
+              value={formData.hosts}
+              onChange={(e) => setFormData({ ...formData, hosts: e.target.value })}
+              placeholder="Single host, couple, local guide"
+              rows="2"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Format (long/shorts/live) *</label>
+            <textarea
+              value={formData.formats}
+              onChange={(e) => setFormData({ ...formData, formats: e.target.value })}
+              placeholder="Long-form vlogs, Shorts, live streams"
+              rows="2"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Tone/Style *</label>
+            <textarea
+              value={formData.tone_style}
+              onChange={(e) => setFormData({ ...formData, tone_style: e.target.value })}
+              placeholder="Casual, cinematic, instructional"
+              rows="2"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Expertise/Background *</label>
+            <textarea
+              value={formData.expertise_background}
+              onChange={(e) => setFormData({ ...formData, expertise_background: e.target.value })}
+              placeholder="Travel experience, credentials, years on the road."
+              rows="2"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Credibility/Bias Notes *</label>
+            <textarea
+              value={formData.credibility_bias_notes}
+              onChange={(e) => setFormData({ ...formData, credibility_bias_notes: e.target.value })}
+              placeholder="Sponsorships, affiliate links, partnerships."
+              rows="2"
+              required
             />
           </div>
           <div className="form-group">

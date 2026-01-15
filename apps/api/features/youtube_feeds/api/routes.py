@@ -1,6 +1,9 @@
+import csv
+import io
+import json
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import Response
 from typing import Dict, List, Optional
 
 from features.youtube_feeds.schema.models import (
@@ -20,6 +23,35 @@ from lib.database import fetch_all, fetch_one, execute_query
 router = APIRouter(prefix="/youtube-feeds", tags=["youtube-feeds"])
 
 
+def _serialize_list(values: Optional[List[str]]) -> Optional[str]:
+    if values is None:
+        return None
+    return json.dumps(values, ensure_ascii=False)
+
+
+def _deserialize_list(values: Optional[str]) -> List[str]:
+    if not values:
+        return []
+    if isinstance(values, list):
+        return values
+    try:
+        parsed = json.loads(values)
+        if isinstance(parsed, list):
+            return [str(item).strip() for item in parsed if str(item).strip()]
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return []
+
+
+def _normalize_feed_row(feed: Dict) -> Dict:
+    normalized = dict(feed)
+    normalized["primary_topics"] = _deserialize_list(normalized.get("primary_topics"))
+    normalized["hosts"] = _deserialize_list(normalized.get("hosts"))
+    normalized["formats"] = _deserialize_list(normalized.get("formats"))
+    normalized["tone_style"] = _deserialize_list(normalized.get("tone_style"))
+    return normalized
+
+
 @router.post("", response_model=YouTubeFeedResponse, status_code=201)
 def create_youtube_feed(feed: YouTubeFeedCreate) -> YouTubeFeedResponse:
     """Create a new YouTube feed."""
@@ -30,8 +62,10 @@ def create_youtube_feed(feed: YouTubeFeedCreate) -> YouTubeFeedResponse:
     try:
         feed_id = execute_query(
             """INSERT INTO youtube_feeds
-               (category_id, channel_id, display_name, channel_url, fetch_interval, is_active)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+               (category_id, channel_id, display_name, channel_url, fetch_interval, is_active,
+                channel_summary, primary_topics, audience, language_region, hosts, formats,
+                tone_style, expertise_background, credibility_bias_notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 feed.category_id,
                 feed.channel_id,
@@ -39,12 +73,21 @@ def create_youtube_feed(feed: YouTubeFeedCreate) -> YouTubeFeedResponse:
                 feed.channel_url,
                 feed.fetch_interval,
                 feed.is_active,
+                feed.channel_summary,
+                _serialize_list(feed.primary_topics),
+                feed.audience,
+                feed.language_region,
+                _serialize_list(feed.hosts),
+                _serialize_list(feed.formats),
+                _serialize_list(feed.tone_style),
+                feed.expertise_background,
+                feed.credibility_bias_notes,
             ),
         )
         result = fetch_one("SELECT * FROM youtube_feeds WHERE id = ?", (feed_id,))
         if not result:
             raise HTTPException(status_code=500, detail="Failed to create YouTube feed")
-        return YouTubeFeedResponse(**result)
+        return YouTubeFeedResponse(**_normalize_feed_row(result))
     except Exception as exc:
         if "UNIQUE constraint failed" in str(exc):
             raise HTTPException(status_code=400, detail="YouTube channel already exists")
@@ -76,7 +119,7 @@ def get_youtube_feeds(
         params.extend([limit, offset])
 
     feeds = fetch_all(query, tuple(params))
-    return [YouTubeFeedResponse(**feed) for feed in feeds]
+    return [YouTubeFeedResponse(**_normalize_feed_row(feed)) for feed in feeds]
 
 
 @router.post("/fetch-all", response_model=List[Dict])
@@ -170,7 +213,7 @@ def get_youtube_feed(feed_id: int) -> YouTubeFeedResponse:
     feed = fetch_one("SELECT * FROM youtube_feeds WHERE id = ?", (feed_id,))
     if not feed:
         raise HTTPException(status_code=404, detail="YouTube feed not found")
-    return YouTubeFeedResponse(**feed)
+    return YouTubeFeedResponse(**_normalize_feed_row(feed))
 
 
 @router.put("/{feed_id}", response_model=YouTubeFeedResponse)
@@ -203,6 +246,33 @@ def update_youtube_feed(
     if feed.channel_url is not None:
         updates.append("channel_url = ?")
         params.append(feed.channel_url)
+    if feed.channel_summary is not None:
+        updates.append("channel_summary = ?")
+        params.append(feed.channel_summary)
+    if feed.primary_topics is not None:
+        updates.append("primary_topics = ?")
+        params.append(_serialize_list(feed.primary_topics))
+    if feed.audience is not None:
+        updates.append("audience = ?")
+        params.append(feed.audience)
+    if feed.language_region is not None:
+        updates.append("language_region = ?")
+        params.append(feed.language_region)
+    if feed.hosts is not None:
+        updates.append("hosts = ?")
+        params.append(_serialize_list(feed.hosts))
+    if feed.formats is not None:
+        updates.append("formats = ?")
+        params.append(_serialize_list(feed.formats))
+    if feed.tone_style is not None:
+        updates.append("tone_style = ?")
+        params.append(_serialize_list(feed.tone_style))
+    if feed.expertise_background is not None:
+        updates.append("expertise_background = ?")
+        params.append(feed.expertise_background)
+    if feed.credibility_bias_notes is not None:
+        updates.append("credibility_bias_notes = ?")
+        params.append(feed.credibility_bias_notes)
     if feed.fetch_interval is not None:
         updates.append("fetch_interval = ?")
         params.append(feed.fetch_interval)
@@ -214,7 +284,7 @@ def update_youtube_feed(
         params.append(feed.last_fetched)
 
     if not updates:
-        return YouTubeFeedResponse(**existing)
+        return YouTubeFeedResponse(**_normalize_feed_row(existing))
 
     params.append(feed_id)
     query = f"UPDATE youtube_feeds SET {', '.join(updates)} WHERE id = ?"
@@ -222,7 +292,7 @@ def update_youtube_feed(
     try:
         execute_query(query, tuple(params))
         result = fetch_one("SELECT * FROM youtube_feeds WHERE id = ?", (feed_id,))
-        return YouTubeFeedResponse(**result)
+        return YouTubeFeedResponse(**_normalize_feed_row(result))
     except Exception as exc:
         if "UNIQUE constraint failed" in str(exc):
             raise HTTPException(status_code=400, detail="YouTube channel already exists")
@@ -241,7 +311,7 @@ def delete_youtube_feed(feed_id: int):
 
 @router.post("/posts/{post_id}/transcript", response_model=TranscriptResponse)
 def extract_post_transcript(post_id: int) -> TranscriptResponse:
-    """Extract transcript from a YouTube video using Playwright."""
+    """Extract transcript from a YouTube video using youtube-transcript-api."""
     post = fetch_one("SELECT * FROM youtube_posts WHERE id = ?", (post_id,))
     if not post:
         raise HTTPException(status_code=404, detail="YouTube post not found")
@@ -256,7 +326,7 @@ def extract_post_transcript(post_id: int) -> TranscriptResponse:
         ("extracting", post_id)
     )
 
-    # Extract transcript using Playwright
+    # Extract transcript using youtube-transcript-api
     result = extract_transcript_sync(video_id)
 
     # Update database with result
@@ -314,8 +384,17 @@ def get_post_transcript(post_id: int) -> TranscriptResponse:
 
 @router.get("/posts/{post_id}/transcript/download")
 def download_post_transcript(post_id: int):
-    """Download transcript as a plain text file."""
-    post = fetch_one("SELECT * FROM youtube_posts WHERE id = ?", (post_id,))
+    """Download transcript and metadata as a CSV file."""
+    post = fetch_one(
+        """SELECT yp.*, yf.display_name AS feed_display_name,
+                  yf.channel_summary, yf.primary_topics, yf.audience, yf.language_region,
+                  yf.hosts, yf.formats, yf.tone_style, yf.expertise_background,
+                  yf.credibility_bias_notes
+           FROM youtube_posts yp
+           JOIN youtube_feeds yf ON yp.youtube_feed_id = yf.id
+           WHERE yp.id = ?""",
+        (post_id,),
+    )
     if not post:
         raise HTTPException(status_code=404, detail="YouTube post not found")
 
@@ -323,16 +402,73 @@ def download_post_transcript(post_id: int):
     if not transcript:
         raise HTTPException(status_code=404, detail="No transcript available")
 
+    primary_topics = json.dumps(_deserialize_list(post.get("primary_topics")), ensure_ascii=False)
+    hosts = json.dumps(_deserialize_list(post.get("hosts")), ensure_ascii=False)
+    formats = json.dumps(_deserialize_list(post.get("formats")), ensure_ascii=False)
+    tone_style = json.dumps(_deserialize_list(post.get("tone_style")), ensure_ascii=False)
+
     # Create filename from title
     title = post.get("title", "transcript")
     # Clean title for filename
     safe_title = "".join(c if c.isalnum() or c in " -_" else "" for c in title)
     safe_title = safe_title[:50].strip() or "transcript"
-    filename = f"{safe_title}.txt"
+    filename = f"{safe_title}.csv"
 
-    return PlainTextResponse(
-        content=transcript,
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(
+        [
+            "video_id",
+            "title",
+            "description",
+            "channel_title",
+            "channel_id",
+            "video_url",
+            "published_at",
+            "transcript",
+            "transcript_status",
+            "transcript_extracted_at",
+            "feed_display_name",
+            "channel_summary",
+            "primary_topics",
+            "audience",
+            "language_region",
+            "hosts",
+            "formats",
+            "tone_style",
+            "expertise_background",
+            "credibility_bias_notes",
+        ]
+    )
+    writer.writerow(
+        [
+            post.get("video_id"),
+            post.get("title"),
+            post.get("description") or "",
+            post.get("channel_title") or "",
+            post.get("channel_id") or "",
+            post.get("video_url") or "",
+            post.get("published_at") or "",
+            transcript,
+            post.get("transcript_status") or "",
+            post.get("transcript_extracted_at") or "",
+            post.get("feed_display_name") or "",
+            post.get("channel_summary") or "",
+            primary_topics,
+            post.get("audience") or "",
+            post.get("language_region") or "",
+            hosts,
+            formats,
+            tone_style,
+            post.get("expertise_background") or "",
+            post.get("credibility_bias_notes") or "",
+        ]
+    )
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"'
-        }
+        },
     )

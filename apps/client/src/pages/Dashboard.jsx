@@ -716,15 +716,15 @@ export default function Dashboard() {
             }
 
             if (hasExistingTranscript || state?.hasTranscript) {
-              return (
-                <button
-                  className="button"
-                  onClick={() => handleDownloadTranscript(post.id)}
-                >
-                  Download Transcript
-                </button>
-              );
-            }
+                      return (
+                        <button
+                          className="button"
+                          onClick={() => handleDownloadTranscript(post.id)}
+                        >
+                          Download CSV
+                        </button>
+                      );
+                    }
 
             if (isUnavailable) {
               return <span className="badge" style={{ background: '#888' }}>No transcript available</span>;

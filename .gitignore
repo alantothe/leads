@@ -6,3 +6,12 @@ bun.lockb
 AGENTS.md
 CLAUDE.md
 .turbo/cookies/*.cookie
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
