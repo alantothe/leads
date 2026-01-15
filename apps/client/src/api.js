@@ -255,13 +255,6 @@ export const translationApi = {
     const query = new URLSearchParams(filteredParams).toString();
     return request(`/translate/reddit-posts${query ? `?${query}` : ''}`, { method: 'POST' });
   },
-  translateTelegramPosts: (params = {}) => {
-    const filteredParams = Object.fromEntries(
-      Object.entries(params).filter(([_, value]) => value !== '' && value != null)
-    );
-    const query = new URLSearchParams(filteredParams).toString();
-    return request(`/translate/telegram-posts${query ? `?${query}` : ''}`, { method: 'POST' });
-  },
   getStats: () => request('/translate/stats'),
   detectMissingLanguages: (force = false) => {
     const query = force ? '?force=true' : '';

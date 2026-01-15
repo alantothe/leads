@@ -107,34 +107,6 @@ async def get_pending_content(
             'translation_status': post['translation_status'],
         } for post in reddit])
 
-    # Fetch pending Telegram posts
-    if not content_type or content_type == 'telegram_post':
-        telegram = fetch_all(
-            """SELECT tp.id,
-                      COALESCE(NULLIF(tp.text_translated, ''), tp.text) AS text,
-                      tp.detected_language,
-                      tp.translation_status,
-                      tp.timestamp, tf.title
-               FROM telegram_posts tp
-               JOIN telegram_feeds tf ON tp.telegram_feed_id = tf.id
-               WHERE tp.approval_status = 'pending'
-               ORDER BY tp.timestamp DESC
-               LIMIT ? OFFSET ?""",
-            (limit, offset)
-        )
-        items.extend([{
-            'content_type': 'telegram_post',
-            'content_id': post['id'],
-            'title': post['text'][:100] if post['text'] else 'No text',
-            'summary': post['text'],
-            'source_name': post['title'],
-            'collected_at': post['timestamp'],
-            'image_url': None,
-            'link': None,
-            'detected_language': post['detected_language'],
-            'translation_status': post['translation_status'],
-        } for post in telegram])
-
     # Fetch pending El Comercio posts
     if not content_type or content_type == 'el_comercio_post':
         el_comercio = fetch_all(
@@ -208,7 +180,6 @@ async def approve_content(request: ApprovalRequest):
         'lead': 'leads',
         'instagram_post': 'instagram_posts',
         'reddit_post': 'reddit_posts',
-        'telegram_post': 'telegram_posts',
         'el_comercio_post': 'el_comercio_posts',
         'diario_correo_post': 'diario_correo_posts'
     }
@@ -242,7 +213,6 @@ async def batch_approve_content(request: BatchApprovalRequest):
                 'lead': 'leads',
                 'instagram_post': 'instagram_posts',
                 'reddit_post': 'reddit_posts',
-                'telegram_post': 'telegram_posts',
                 'el_comercio_post': 'el_comercio_posts',
                 'diario_correo_post': 'diario_correo_posts'
             }
@@ -294,7 +264,6 @@ async def get_approval_stats():
         'leads': 'lead',
         'instagram_posts': 'instagram_post',
         'reddit_posts': 'reddit_post',
-        'telegram_posts': 'telegram_post',
         'el_comercio_posts': 'el_comercio_post',
         'diario_correo_posts': 'diario_correo_post'
     }

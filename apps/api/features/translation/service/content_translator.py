@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 from lib.database.db import fetch_all, fetch_one, execute_query
 from .translator import get_translator
 
@@ -230,70 +230,12 @@ class ContentTranslator:
 
         return stats
 
-    def translate_telegram_posts(self, feed_id: Optional[int] = None, limit: Optional[int] = None) -> Dict:
-        """Translate Telegram post text."""
-        query = """
-            SELECT id, text
-            FROM telegram_posts
-            WHERE (translation_status IS NULL OR translation_status = 'pending')
-        """
-        params = []
-
-        if feed_id:
-            query += " AND telegram_feed_id = ?"
-            params.append(feed_id)
-
-        if limit:
-            query += " LIMIT ?"
-            params.append(limit)
-
-        posts = fetch_all(query, tuple(params))
-
-        stats = {"total": len(posts), "translated": 0, "already_english": 0, "errors": 0, "skipped": 0}
-
-        for post in posts:
-            text = post.get("text")
-            if not text:
-                execute_query(
-                    "UPDATE telegram_posts SET translation_status = ? WHERE id = ?",
-                    ("skipped", post["id"])
-                )
-                stats["skipped"] += 1
-                continue
-
-            try:
-                detected_lang = self.translator.detect_language(text)
-                translated, status = self.translator.translate_text(text)
-
-                if status == "already_english":
-                    stats["already_english"] += 1
-                elif status == "translated":
-                    stats["translated"] += 1
-                else:
-                    stats["errors"] += 1
-
-                execute_query(
-                    """UPDATE telegram_posts
-                       SET text_translated = ?,
-                           detected_language = ?,
-                           translation_status = ?,
-                           translated_at = ?
-                       WHERE id = ?""",
-                    (translated, detected_lang, status, datetime.utcnow().isoformat(), post["id"])
-                )
-            except Exception as e:
-                print(f"Error translating Telegram post {post['id']}: {e}")
-                stats["errors"] += 1
-
-        return stats
-
     def get_translation_stats(self) -> Dict:
         """Get overall translation statistics across all content types."""
         stats = {
             "leads": self._get_table_stats("leads"),
             "instagram_posts": self._get_table_stats("instagram_posts"),
-            "reddit_posts": self._get_table_stats("reddit_posts"),
-            "telegram_posts": self._get_table_stats("telegram_posts")
+            "reddit_posts": self._get_table_stats("reddit_posts")
         }
         return stats
 
@@ -318,8 +260,7 @@ class ContentTranslator:
         stats = {
             "leads_updated": 0,
             "instagram_updated": 0,
-            "reddit_updated": 0,
-            "telegram_updated": 0
+            "reddit_updated": 0
         }
 
         # Detect language for RSS leads - use summary/content for better accuracy
@@ -357,17 +298,6 @@ class ContentTranslator:
                 )
                 stats["reddit_updated"] += 1
 
-        # Detect language for Telegram posts
-        telegram_posts = fetch_all("SELECT id, text FROM telegram_posts WHERE detected_language IS NULL", ())
-        for post in telegram_posts:
-            if post.get("text"):
-                detected_lang = self.translator.detect_language(post["text"])
-                execute_query(
-                    "UPDATE telegram_posts SET detected_language = ? WHERE id = ?",
-                    (detected_lang, post["id"])
-                )
-                stats["telegram_updated"] += 1
-
         return stats
 
     def redetect_all_languages(self) -> Dict:
@@ -378,8 +308,7 @@ class ContentTranslator:
         stats = {
             "leads_updated": 0,
             "instagram_updated": 0,
-            "reddit_updated": 0,
-            "telegram_updated": 0
+            "reddit_updated": 0
         }
 
         # Re-detect language for ALL RSS leads using summary/content
@@ -415,16 +344,5 @@ class ContentTranslator:
                     (detected_lang, post["id"])
                 )
                 stats["reddit_updated"] += 1
-
-        # Re-detect language for ALL Telegram posts
-        telegram_posts = fetch_all("SELECT id, text FROM telegram_posts", ())
-        for post in telegram_posts:
-            if post.get("text"):
-                detected_lang = self.translator.detect_language(post["text"])
-                execute_query(
-                    "UPDATE telegram_posts SET detected_language = ? WHERE id = ?",
-                    (detected_lang, post["id"])
-                )
-                stats["telegram_updated"] += 1
 
         return stats

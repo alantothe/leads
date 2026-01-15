@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class TranslationRequest(BaseModel):
     """Request to translate content for a specific data source."""
-    content_type: Literal["leads", "instagram_posts", "reddit_posts", "telegram_posts"]
+    content_type: Literal["leads", "instagram_posts", "reddit_posts"]
     feed_id: Optional[int] = None
     limit: Optional[int] = None
 
@@ -30,4 +30,3 @@ class OverallStats(BaseModel):
     leads: dict
     instagram_posts: dict
     reddit_posts: dict
-    telegram_posts: dict

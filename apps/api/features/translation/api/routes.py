@@ -17,7 +17,7 @@ def translate_batch(request: TranslationRequest) -> TranslationResponse:
     """
     Trigger batch translation for a specific content type.
 
-    - **content_type**: Type of content to translate (leads, instagram_posts, reddit_posts, telegram_posts)
+    - **content_type**: Type of content to translate (leads, instagram_posts, reddit_posts)
     - **feed_id**: Optional feed ID to filter content
     - **limit**: Optional limit on number of items to translate
     """
@@ -30,8 +30,6 @@ def translate_batch(request: TranslationRequest) -> TranslationResponse:
             stats = translator.translate_instagram_posts(feed_id=request.feed_id, limit=request.limit)
         elif request.content_type == "reddit_posts":
             stats = translator.translate_reddit_posts(feed_id=request.feed_id, limit=request.limit)
-        elif request.content_type == "telegram_posts":
-            stats = translator.translate_telegram_posts(feed_id=request.feed_id, limit=request.limit)
         else:
             raise HTTPException(status_code=400, detail=f"Invalid content_type: {request.content_type}")
 
@@ -92,22 +90,6 @@ def translate_reddit_posts(
     )
 
 
-@router.post("/telegram-posts", response_model=TranslationResponse)
-def translate_telegram_posts(
-    feed_id: Optional[int] = Query(None, description="Filter by Telegram feed ID"),
-    limit: Optional[int] = Query(None, description="Maximum items to translate")
-) -> TranslationResponse:
-    """Translate Telegram posts."""
-    translator = ContentTranslator()
-    stats = translator.translate_telegram_posts(feed_id=feed_id, limit=limit)
-
-    return TranslationResponse(
-        content_type="telegram_posts",
-        stats=TranslationStats(**stats),
-        message=f"Translated {stats['translated']} Telegram posts"
-    )
-
-
 @router.get("/stats", response_model=OverallStats)
 def get_translation_stats() -> OverallStats:
     """Get overall translation statistics across all content types."""
@@ -131,6 +113,5 @@ def detect_missing_languages(force: bool = False):
         "message": "Language detection complete",
         "leads_updated": result["leads_updated"],
         "instagram_updated": result["instagram_updated"],
-        "reddit_updated": result["reddit_updated"],
-        "telegram_updated": result["telegram_updated"]
+        "reddit_updated": result["reddit_updated"]
     }

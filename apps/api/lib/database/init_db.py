@@ -71,16 +71,6 @@ def add_translation_columns():
     if not column_exists('reddit_posts', 'translated_at'):
         cursor.execute("ALTER TABLE reddit_posts ADD COLUMN translated_at TEXT")
 
-    # Add translation columns to telegram_posts table
-    if not column_exists('telegram_posts', 'text_translated'):
-        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN text_translated TEXT")
-    if not column_exists('telegram_posts', 'detected_language'):
-        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN detected_language TEXT")
-    if not column_exists('telegram_posts', 'translation_status'):
-        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN translation_status TEXT DEFAULT 'pending'")
-    if not column_exists('telegram_posts', 'translated_at'):
-        cursor.execute("ALTER TABLE telegram_posts ADD COLUMN translated_at TEXT")
-
     conn.commit()
     conn.close()
     print("✅ Translation columns added to all content tables")
@@ -97,7 +87,7 @@ def add_approval_columns():
         columns = [row[1] for row in cursor.fetchall()]
         return column_name in columns
 
-    tables = ['leads', 'instagram_posts', 'reddit_posts', 'telegram_posts']
+    tables = ['leads', 'instagram_posts', 'reddit_posts']
 
     for table in tables:
         # Add approval_status column with DEFAULT 'approved' for existing records
@@ -276,66 +266,6 @@ def init_database():
             description TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (category_id) REFERENCES categories(id)
-        )
-    """)
-
-    # Create telegram_feeds table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS telegram_feeds (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category_id INTEGER NOT NULL,
-            chat_id INTEGER UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            type TEXT NOT NULL,
-            fetch_interval INTEGER DEFAULT 60,
-            last_fetched TEXT,
-            is_active INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (category_id) REFERENCES categories(id)
-        )
-    """)
-
-    # Create telegram_posts table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS telegram_posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            telegram_feed_id INTEGER NOT NULL,
-            message_id INTEGER NOT NULL,
-            text TEXT,
-            timestamp TEXT NOT NULL,
-            sender_id INTEGER,
-            sender_name TEXT,
-            sender_username TEXT,
-            sender_type TEXT,
-            media_type TEXT,
-            media_file_name TEXT,
-            collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(telegram_feed_id, message_id),
-            FOREIGN KEY (telegram_feed_id) REFERENCES telegram_feeds(id) ON DELETE CASCADE
-        )
-    """)
-
-    # Create telegram_feed_tag_map table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS telegram_feed_tag_map (
-            telegram_feed_id INTEGER,
-            tag_id INTEGER,
-            PRIMARY KEY (telegram_feed_id, tag_id),
-            FOREIGN KEY (telegram_feed_id) REFERENCES telegram_feeds(id) ON DELETE CASCADE,
-            FOREIGN KEY (tag_id) REFERENCES feed_tags(id) ON DELETE CASCADE
-        )
-    """)
-
-    # Create telegram_fetch_logs table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS telegram_fetch_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            telegram_feed_id INTEGER NOT NULL,
-            fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            status TEXT,
-            post_count INTEGER,
-            error_message TEXT,
-            FOREIGN KEY (telegram_feed_id) REFERENCES telegram_feeds(id) ON DELETE CASCADE
         )
     """)
 

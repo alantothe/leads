@@ -51,7 +51,6 @@ const CONTENT_TYPE_LABELS = {
   lead: 'Article',
   instagram_post: 'Instagram Post',
   reddit_post: 'Reddit Post',
-  telegram_post: 'Telegram Message',
   el_comercio_post: 'El Comercio Article',
   diario_correo_post: 'Diario Correo Article'
 };
@@ -255,12 +254,6 @@ export default function ApprovalQueue() {
             onClick={() => setFilter('reddit_post')}
           >
             Reddit ({stats?.reddit_post?.pending || 0})
-          </button>
-          <button
-            className={filter === 'telegram_post' ? 'active' : ''}
-            onClick={() => setFilter('telegram_post')}
-          >
-            Telegram ({stats?.telegram_post?.pending || 0})
           </button>
           <button
             className={filter === 'el_comercio_post' ? 'active' : ''}

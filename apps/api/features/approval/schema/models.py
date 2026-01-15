@@ -5,7 +5,6 @@ ContentType = Literal[
     'lead',
     'instagram_post',
     'reddit_post',
-    'telegram_post',
     'el_comercio_post',
     'diario_correo_post',
 ]

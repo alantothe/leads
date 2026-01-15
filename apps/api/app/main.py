@@ -1,11 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-import sys
-
-# Add Telegram app to Python path
-telegram_path = Path(__file__).parent.parent.parent / "telegram"
-sys.path.insert(0, str(telegram_path))
 
 from features.feed.api.routes import router as feed_router
 from features.categories.api.routes import router as categories_router
@@ -23,33 +17,7 @@ from features.diario_correo_feeds.api.routes import router as diario_correo_feed
 from features.scrapes.api.routes import router as scrapes_router
 from features.youtube_feeds.api.routes import router as youtube_feeds_router
 
-# Import Telegram router
-from features.telegram.api.routes import router as telegram_router
-
-# Import Telegram service for lifecycle management
-from features.telegram.service.client import TelegramService
-from contextlib import asynccontextmanager
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: Initialize Telegram service
-    try:
-        telegram_service = TelegramService.from_env()
-        await telegram_service.connect()
-        app.state.telegram_service = telegram_service
-    except Exception:
-        # If Telegram env vars not configured, service won't be available
-        app.state.telegram_service = None
-
-    yield
-
-    # Shutdown: Disconnect Telegram service
-    if hasattr(app.state, "telegram_service") and app.state.telegram_service:
-        await app.state.telegram_service.disconnect()
-
-
-app = FastAPI(title="RSS Leads API", lifespan=lifespan)
+app = FastAPI(title="RSS Leads API")
 
 # Add CORS middleware
 app.add_middleware(
@@ -70,7 +38,6 @@ app.include_router(feed_router)
 app.include_router(instagram_feeds_router)
 app.include_router(subreddits_router)
 app.include_router(translation_router)
-app.include_router(telegram_router)
 app.include_router(approval_router)
 app.include_router(el_comercio_feeds_router)
 app.include_router(diario_correo_feeds_router)

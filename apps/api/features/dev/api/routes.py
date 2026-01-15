@@ -23,10 +23,6 @@ def clear_all_data():
         cursor.execute("DELETE FROM el_comercio_fetch_logs")
         cursor.execute("DELETE FROM el_comercio_feed_tag_map")
         cursor.execute("DELETE FROM el_comercio_feeds")
-        cursor.execute("DELETE FROM telegram_posts")
-        cursor.execute("DELETE FROM telegram_fetch_logs")
-        cursor.execute("DELETE FROM telegram_feed_tag_map")
-        cursor.execute("DELETE FROM telegram_feeds")
         cursor.execute("DELETE FROM reddit_feeds")
         cursor.execute("DELETE FROM instagram_posts")
         cursor.execute("DELETE FROM instagram_fetch_logs")
@@ -70,10 +66,6 @@ def clear_all_data():
                 "instagram_posts",
                 "instagram_fetch_logs",
                 "reddit_feeds",
-                "telegram_feeds",
-                "telegram_feed_tag_map",
-                "telegram_posts",
-                "telegram_fetch_logs",
             ]
         }
     except Exception as e:
@@ -98,8 +90,6 @@ def clear_fetched_data():
         cursor.execute("DELETE FROM youtube_fetch_logs")
         cursor.execute("DELETE FROM instagram_posts")
         cursor.execute("DELETE FROM instagram_fetch_logs")
-        cursor.execute("DELETE FROM telegram_posts")
-        cursor.execute("DELETE FROM telegram_fetch_logs")
 
         # Reset autoincrement for these tables
         cursor.execute(
@@ -114,9 +104,7 @@ def clear_fetched_data():
                    'youtube_posts',
                    'youtube_fetch_logs',
                    'instagram_posts',
-                   'instagram_fetch_logs',
-                   'telegram_posts',
-                   'telegram_fetch_logs'
+                   'instagram_fetch_logs'
                )"""
         )
 
@@ -136,8 +124,6 @@ def clear_fetched_data():
                 "youtube_fetch_logs",
                 "instagram_posts",
                 "instagram_fetch_logs",
-                "telegram_posts",
-                "telegram_fetch_logs",
             ],
             "preserved": [
                 "categories",
@@ -152,8 +138,6 @@ def clear_fetched_data():
                 "instagram_feeds",
                 "instagram_feed_tag_map",
                 "reddit_feeds",
-                "telegram_feeds",
-                "telegram_feed_tag_map",
             ]
         }
     except Exception as e:
