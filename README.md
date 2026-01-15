@@ -82,6 +82,22 @@ bun run dev
 
 This starts both the backend and frontend concurrently.
 
+**Option 3: Run everything in Docker (dev)**
+
+From the root directory:
+```bash
+docker compose up --build
+```
+
+This starts:
+- API: http://localhost:8000
+- Frontend: http://localhost:5173
+- LibreTranslate: http://localhost:5001
+
+Notes:
+- Set `YOUTUBE_API_KEY`, `RAPIDAPI_KEY`, and `LIBRETRANSLATE_API_KEY` in your environment if needed.
+- The API container runs `python lib/database/init_db.py` on startup and uses `apps/api/leads.db`.
+
 ### Access the Application
 
 Open your browser to http://localhost:5173
