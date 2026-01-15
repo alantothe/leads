@@ -121,7 +121,7 @@ export default function ElComercioPosts() {
           >
             {fetchAllFeeds.isPending ? 'Scraping...' : 'Scrape Articles'}
           </button>
-          <Link to="/el-comercio-feeds" className="button secondary">Manage Feeds</Link>
+          <Link to="/el-comercio-feeds" className="button secondary">Scraper Info</Link>
         </div>
         <div className="lead-count">{posts.length} approved articles</div>
       </div>

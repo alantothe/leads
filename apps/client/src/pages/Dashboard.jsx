@@ -6,8 +6,12 @@ import {
   useInstagramFeeds,
   useInstagramPostsList,
   useLeadsList,
+  useDiarioCorreoFeeds,
+  useDiarioCorreoPostsList,
   useElComercioFeeds,
   useInfiniteElComercioPostsList,
+  useYouTubeFeeds,
+  useYouTubePostsList,
 } from '../hooks';
 
 const DASHBOARD_FETCH_LIMIT = 1000;
@@ -151,6 +155,17 @@ export default function Dashboard() {
   });
 
   const {
+    data: youtubePosts = [],
+    isLoading: youtubePostsLoading,
+    isFetching: youtubePostsFetching,
+    error: youtubePostsError,
+  } = useYouTubePostsList({
+    limit: DASHBOARD_FETCH_LIMIT,
+    category: categoryFilter,
+    search: searchFilter,
+  });
+
+  const {
     data: feeds = [],
     isLoading: feedsLoading,
     error: feedsError,
@@ -187,10 +202,33 @@ export default function Dashboard() {
   const elComercioPosts = elComercioPostsData?.pages.flat() ?? [];
 
   const {
+    data: diarioCorreoPosts = [],
+    isLoading: diarioCorreoPostsLoading,
+    isFetching: diarioCorreoPostsFetching,
+    error: diarioCorreoPostsError,
+  } = useDiarioCorreoPostsList({
+    approval_status: 'approved',
+    search: searchFilter,
+    limit: DASHBOARD_FETCH_LIMIT,
+  });
+
+  const {
     data: elComercioFeeds = [],
     isLoading: elComercioFeedsLoading,
     error: elComercioFeedsError,
   } = useElComercioFeeds();
+
+  const {
+    data: diarioCorreoFeeds = [],
+    isLoading: diarioCorreoFeedsLoading,
+    error: diarioCorreoFeedsError,
+  } = useDiarioCorreoFeeds();
+
+  const {
+    data: youtubeFeeds = [],
+    isLoading: youtubeFeedsLoading,
+    error: youtubeFeedsError,
+  } = useYouTubeFeeds();
 
   const feedNames = useMemo(
     () => new Map(feeds.map((feed) => [feed.id, feed.source_name])),
@@ -216,6 +254,22 @@ export default function Dashboard() {
     () => new Map(elComercioFeeds.map((feed) => [feed.id, feed.category_id])),
     [elComercioFeeds],
   );
+  const diarioCorreoFeedNames = useMemo(
+    () => new Map(diarioCorreoFeeds.map((feed) => [feed.id, feed.display_name])),
+    [diarioCorreoFeeds],
+  );
+  const diarioCorreoFeedCategoryIds = useMemo(
+    () => new Map(diarioCorreoFeeds.map((feed) => [feed.id, feed.category_id])),
+    [diarioCorreoFeeds],
+  );
+  const youtubeFeedNames = useMemo(
+    () => new Map(youtubeFeeds.map((feed) => [feed.id, feed.display_name])),
+    [youtubeFeeds],
+  );
+  const youtubeFeedCategoryIds = useMemo(
+    () => new Map(youtubeFeeds.map((feed) => [feed.id, feed.category_id])),
+    [youtubeFeeds],
+  );
   const categoryNames = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
@@ -225,15 +279,23 @@ export default function Dashboard() {
     const leadItems = leads.map((lead) => ({ type: 'lead', data: lead }));
     const instagramItems = posts.map((post) => ({ type: 'instagram', data: post }));
     const elComercioItems = elComercioPosts.map((post) => ({ type: 'el_comercio', data: post }));
-    return [...leadItems, ...instagramItems, ...elComercioItems];
-  }, [leads, posts, elComercioPosts]);
+    const diarioCorreoItems = diarioCorreoPosts.map((post) => ({ type: 'diario_correo', data: post }));
+    const youtubeItems = youtubePosts.map((post) => ({ type: 'youtube', data: post }));
+    return [
+      ...leadItems,
+      ...instagramItems,
+      ...elComercioItems,
+      ...diarioCorreoItems,
+      ...youtubeItems,
+    ];
+  }, [leads, posts, elComercioPosts, diarioCorreoPosts, youtubePosts]);
 
   const sortedItems = useMemo(() => {
     return [...combinedItems].sort((a, b) => {
-      const aDate = a.type === 'lead' || a.type === 'el_comercio'
+      const aDate = a.type === 'lead' || a.type === 'el_comercio' || a.type === 'diario_correo' || a.type === 'youtube'
         ? a.data.published || a.data.published_at || a.data.collected_at
         : a.data.posted_at || a.data.collected_at;
-      const bDate = b.type === 'lead' || b.type === 'el_comercio'
+      const bDate = b.type === 'lead' || b.type === 'el_comercio' || b.type === 'diario_correo' || b.type === 'youtube'
         ? b.data.published || b.data.published_at || b.data.collected_at
         : b.data.posted_at || b.data.collected_at;
       return getTimestamp(bDate) - getTimestamp(aDate);
@@ -243,11 +305,16 @@ export default function Dashboard() {
   const totalCount = combinedItems.length;
   const isLoading =
     leadsLoading || postsLoading || feedsLoading || instagramFeedsLoading || categoriesLoading ||
-    elComercioPostsLoading || elComercioFeedsLoading;
+    elComercioPostsLoading || elComercioFeedsLoading ||
+    diarioCorreoPostsLoading || diarioCorreoFeedsLoading ||
+    youtubePostsLoading || youtubeFeedsLoading;
   const isFetching = leadsFetching || postsFetching ||
+    diarioCorreoPostsFetching || youtubePostsFetching ||
     (elComercioPostsFetching && !elComercioPostsFetchingNextPage);
   const error = leadsError || postsError || feedsError || instagramFeedsError || categoriesError ||
-    elComercioPostsError || elComercioFeedsError;
+    elComercioPostsError || elComercioFeedsError ||
+    diarioCorreoPostsError || diarioCorreoFeedsError ||
+    youtubePostsError || youtubeFeedsError;
   const loadMoreRef = useRef(null);
 
   useEffect(() => {
@@ -492,6 +559,127 @@ export default function Dashboard() {
     );
   }
 
+  function renderDiarioCorreoCard(post) {
+    const displayTitle = showTranslated && post.title_translated
+      ? post.title_translated
+      : post.title;
+
+    const displayExcerpt = showTranslated && post.excerpt_translated
+      ? post.excerpt_translated
+      : post.excerpt;
+
+    const isTranslated = post.translation_status === 'translated';
+    const languageLabel = post.detected_language && post.detected_language !== 'en'
+      ? getLanguageName(post.detected_language)
+      : null;
+
+    const categoryName =
+      categoryNames.get(diarioCorreoFeedCategoryIds.get(post.diario_correo_feed_id))
+      || categoryFilter
+      || 'Unknown';
+
+    return (
+      <div key={`diario_correo-${post.id}`} className="lead-card">
+        {post.image_url && (
+          <div className="lead-image">
+            <img src={post.image_url} alt={displayTitle} loading="lazy" />
+          </div>
+        )}
+        <div className="lead-header">
+          <h3>
+            {post.url ? (
+              <a href={post.url} target="_blank" rel="noopener noreferrer">
+                {displayTitle}
+              </a>
+            ) : (
+              displayTitle
+            )}
+          </h3>
+        </div>
+
+        <div className="lead-badges">
+          <span className="badge">Diario Correo</span>
+          <span className="badge">{categoryName}</span>
+          <span className="badge">
+            {diarioCorreoFeedNames.get(post.diario_correo_feed_id) || 'Unknown Feed'}
+          </span>
+          {isTranslated && <span className="badge translation-badge">Translated</span>}
+          {languageLabel && (
+            <span className="badge language-badge" data-lang-code={post.detected_language.toUpperCase()}>
+              <span className="language-full">{languageLabel}</span>
+              <span className="language-abbrev">{post.detected_language.toUpperCase()}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="lead-meta">
+          <span>
+            {post.published_at
+              ? `Published: ${formatDate(post.published_at)}`
+              : `Collected: ${formatDate(post.collected_at)}`}
+          </span>
+        </div>
+        {displayExcerpt && <p className="lead-summary">{displayExcerpt}</p>}
+        <div className="lead-footer">
+          <small>Collected: {formatDate(post.collected_at, true)}</small>
+          {!showTranslated && post.title_translated && (
+            <small className="translation-hint">English translation available</small>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderYouTubeCard(post) {
+    const categoryName =
+      categoryNames.get(youtubeFeedCategoryIds.get(post.youtube_feed_id))
+      || categoryFilter
+      || 'Unknown';
+    const channelLabel =
+      youtubeFeedNames.get(post.youtube_feed_id) || post.channel_title || 'Unknown Channel';
+
+    return (
+      <div key={`youtube-${post.id}`} className="lead-card">
+        {post.thumbnail_url && (
+          <div className="lead-image">
+            <img src={post.thumbnail_url} alt={post.title} loading="lazy" />
+          </div>
+        )}
+        <div className="lead-header">
+          <h3>
+            {post.video_url ? (
+              <a href={post.video_url} target="_blank" rel="noopener noreferrer">
+                {post.title}
+              </a>
+            ) : (
+              post.title
+            )}
+          </h3>
+        </div>
+
+        <div className="lead-badges">
+          <span className="badge">YouTube</span>
+          <span className="badge">{categoryName}</span>
+          <span className="badge">{channelLabel}</span>
+        </div>
+
+        <div className="lead-meta">
+          <span>
+            {post.published_at
+              ? `Published: ${formatDate(post.published_at)}`
+              : `Collected: ${formatDate(post.collected_at)}`}
+          </span>
+        </div>
+
+        {post.description && <p className="lead-summary">{post.description}</p>}
+
+        <div className="lead-footer">
+          <small>Collected: {formatDate(post.collected_at, true)}</small>
+        </div>
+      </div>
+    );
+  }
+
   const emptyMessage = categoryFilter || searchFilter
     ? 'No approved content matches your filters.'
     : 'No approved content yet. Review pending items in the approval queue.';
@@ -538,6 +726,8 @@ export default function Dashboard() {
             if (item.type === 'lead') return renderLeadCard(item.data);
             if (item.type === 'instagram') return renderInstagramCard(item.data);
             if (item.type === 'el_comercio') return renderElComercioCard(item.data);
+            if (item.type === 'diario_correo') return renderDiarioCorreoCard(item.data);
+            if (item.type === 'youtube') return renderYouTubeCard(item.data);
             return null;
           })}
         </div>

@@ -12,10 +12,11 @@ export default function Layout() {
         </div>
         <div className="nav-links">
           <Link to="/approval" className="nav-link-approval">Approval Queue</Link>
+          <Link to="/scrapes">Scrapes</Link>
           <Link to="/subreddit-browser">Reddit</Link>
           <Link to="/leads">Articles</Link>
           <Link to="/instagram-posts">Instagram</Link>
-          <Link to="/el-comercio-posts">El Comercio</Link>
+          <Link to="/youtube-posts">YouTube</Link>
         </div>
         <div className="nav-actions">
           <Link to="/settings" className="nav-link-icon" aria-label="Settings" title="Settings">

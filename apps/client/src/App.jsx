@@ -9,11 +9,14 @@ import ElComercioFeeds from './pages/ElComercioFeeds';
 import Tags from './pages/Tags';
 import Leads from './pages/Leads';
 import InstagramPosts from './pages/InstagramPosts';
-import ElComercioPosts from './pages/ElComercioPosts';
+import Scrapes from './pages/Scrapes';
+import ManageScrapes from './pages/ManageScrapes';
 import Subreddits from './pages/Subreddits';
 import SubredditBrowser from './pages/SubredditBrowser';
 import FetchLogs from './pages/FetchLogs';
 import ApprovalQueue from './pages/ApprovalQueue';
+import YouTubeFeeds from './pages/YouTubeFeeds';
+import YouTubePosts from './pages/YouTubePosts';
 
 export default function App() {
   return (
@@ -32,7 +35,10 @@ export default function App() {
           <Route path="tags" element={<Tags />} />
           <Route path="leads" element={<Leads />} />
           <Route path="instagram-posts" element={<InstagramPosts />} />
-          <Route path="el-comercio-posts" element={<ElComercioPosts />} />
+          <Route path="youtube-feeds" element={<YouTubeFeeds />} />
+          <Route path="youtube-posts" element={<YouTubePosts />} />
+          <Route path="scrapes" element={<Scrapes />} />
+          <Route path="scrapes/manage" element={<ManageScrapes />} />
           <Route path="logs" element={<FetchLogs />} />
         </Route>
       </Routes>

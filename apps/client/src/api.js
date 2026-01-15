@@ -146,12 +146,7 @@ export const elComercioFeedsApi = {
     return request(`/el-comercio-feeds${query ? `?${query}` : ''}`);
   },
   getById: (id) => request(`/el-comercio-feeds/${id}`),
-  create: (data) => request('/el-comercio-feeds', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id, data) => request(`/el-comercio-feeds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  activate: (id) => request(`/el-comercio-feeds/${id}/activate`, { method: 'PATCH' }),
-  deactivate: (id) => request(`/el-comercio-feeds/${id}/deactivate`, { method: 'PATCH' }),
-  delete: (id) => request(`/el-comercio-feeds/${id}`, { method: 'DELETE' }),
-  fetch: (id) => request(`/el-comercio-feeds/${id}/fetch`, { method: 'POST' }),
+  fetch: () => request('/el-comercio-feeds/fetch', { method: 'POST' }),
   fetchAll: () => request('/el-comercio-feeds/fetch-all', { method: 'POST' }),
 };
 
@@ -163,6 +158,64 @@ export const elComercioPostsApi = {
   },
   getById: (id) => request(`/el-comercio-feeds/posts/${id}`),
   delete: (id) => request(`/el-comercio-feeds/posts/${id}`, { method: 'DELETE' }),
+};
+
+// Diario Correo Feeds API
+export const diarioCorreoFeedsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/diario-correo-feeds${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/diario-correo-feeds/${id}`),
+  fetch: () => request('/diario-correo-feeds/fetch', { method: 'POST' }),
+  fetchAll: () => request('/diario-correo-feeds/fetch-all', { method: 'POST' }),
+};
+
+// Diario Correo Posts API
+export const diarioCorreoPostsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/diario-correo-feeds/posts${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/diario-correo-feeds/posts/${id}`),
+};
+
+// YouTube Feeds API
+export const youtubeFeedsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/youtube-feeds${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/youtube-feeds/${id}`),
+  create: (data) => request('/youtube-feeds', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/youtube-feeds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/youtube-feeds/${id}`, { method: 'DELETE' }),
+  fetch: (id, params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/youtube-feeds/${id}/fetch${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+  fetchAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/youtube-feeds/fetch-all${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+};
+
+// YouTube Posts API
+export const youtubePostsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/youtube-feeds/posts${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/youtube-feeds/posts/${id}`),
+  delete: (id) => request(`/youtube-feeds/posts/${id}`, { method: 'DELETE' }),
+};
+
+// Unified Scrapes API
+export const scrapesApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/scrapes${query ? `?${query}` : ''}`);
+  },
 };
 
 // Subreddits API

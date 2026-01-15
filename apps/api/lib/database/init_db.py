@@ -388,7 +388,8 @@ def init_database():
     categories = [
         (1, "Jobs"),
         (2, "AI"),
-        (3, "Crypto")
+        (3, "Crypto"),
+        (4, "Peru"),
     ]
     cursor.executemany(
         "INSERT OR IGNORE INTO categories (id, name) VALUES (?, ?)",
@@ -582,6 +583,144 @@ def add_el_comercio_tables():
     print("✅ El Comercio tables created")
 
 
+def add_diario_correo_tables():
+    """Add Diario Correo scraping tables."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    # Table 1: Feed configuration
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS diario_correo_feeds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            url TEXT UNIQUE NOT NULL,
+            display_name TEXT NOT NULL,
+            section TEXT NOT NULL,
+            fetch_interval INTEGER DEFAULT 60,
+            last_fetched TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id)
+        )
+    """)
+
+    # Table 2: Scraped articles
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS diario_correo_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            diario_correo_feed_id INTEGER NOT NULL,
+            url TEXT UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            published_at TEXT,
+            section TEXT DEFAULT 'gastronomia',
+            image_url TEXT,
+            excerpt TEXT,
+            language TEXT DEFAULT 'es',
+            source TEXT DEFAULT 'diariocorreo',
+            collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            title_translated TEXT,
+            excerpt_translated TEXT,
+            detected_language TEXT,
+            translation_status TEXT DEFAULT 'pending',
+            translated_at TEXT,
+            approval_status TEXT DEFAULT 'pending',
+            approved_by TEXT,
+            approved_at TEXT,
+            approval_notes TEXT,
+            FOREIGN KEY (diario_correo_feed_id) REFERENCES diario_correo_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Table 3: Tag mapping
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS diario_correo_feed_tag_map (
+            diario_correo_feed_id INTEGER,
+            tag_id INTEGER,
+            PRIMARY KEY (diario_correo_feed_id, tag_id),
+            FOREIGN KEY (diario_correo_feed_id) REFERENCES diario_correo_feeds(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES feed_tags(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Table 4: Fetch logs
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS diario_correo_fetch_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            diario_correo_feed_id INTEGER NOT NULL,
+            fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            status TEXT,
+            post_count INTEGER,
+            error_message TEXT,
+            FOREIGN KEY (diario_correo_feed_id) REFERENCES diario_correo_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+    print("✅ Diario Correo tables created")
+
+
+def add_youtube_tables():
+    """Add YouTube feed tables."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS youtube_feeds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            channel_id TEXT UNIQUE NOT NULL,
+            display_name TEXT NOT NULL,
+            channel_url TEXT,
+            fetch_interval INTEGER DEFAULT 60,
+            last_fetched TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS youtube_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            youtube_feed_id INTEGER NOT NULL,
+            video_id TEXT UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            published_at TEXT,
+            channel_id TEXT,
+            channel_title TEXT,
+            thumbnail_url TEXT,
+            video_url TEXT,
+            collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            approval_status TEXT DEFAULT 'approved',
+            approved_by TEXT,
+            approved_at TEXT,
+            approval_notes TEXT,
+            FOREIGN KEY (youtube_feed_id) REFERENCES youtube_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS youtube_fetch_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            youtube_feed_id INTEGER NOT NULL,
+            fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            status TEXT,
+            post_count INTEGER,
+            max_results INTEGER,
+            error_message TEXT,
+            FOREIGN KEY (youtube_feed_id) REFERENCES youtube_feeds(id) ON DELETE CASCADE
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+    print("✅ YouTube tables created")
+
+
 if __name__ == "__main__":
     init_database()
     add_el_comercio_tables()
+    add_diario_correo_tables()
+    add_youtube_tables()

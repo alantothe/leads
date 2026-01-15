@@ -1,7 +1,14 @@
 from typing import Optional, Literal
 from pydantic import BaseModel
 
-ContentType = Literal['lead', 'instagram_post', 'reddit_post', 'telegram_post', 'el_comercio_post']
+ContentType = Literal[
+    'lead',
+    'instagram_post',
+    'reddit_post',
+    'telegram_post',
+    'el_comercio_post',
+    'diario_correo_post',
+]
 
 class ApprovalRequest(BaseModel):
     content_type: ContentType

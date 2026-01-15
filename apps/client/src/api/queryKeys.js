@@ -111,6 +111,92 @@ export const queryKeys = {
     limit ?? '',
   ],
 
+  // Diario Correo
+  diarioCorreoFeeds: ['diarioCorreoFeeds'],
+  diarioCorreoFeed: (id) => ['diarioCorreoFeeds', id],
+  diarioCorreoPosts: ['diarioCorreoPosts'],
+  diarioCorreoPost: (id) => ['diarioCorreoPosts', id],
+  diarioCorreoPostsList: ({
+    search = '',
+    diario_correo_feed_id = '',
+    approval_status = '',
+    limit = '',
+    offset = '',
+  } = {}) => [
+    'diarioCorreoPosts',
+    'list',
+    search || '',
+    diario_correo_feed_id || '',
+    approval_status || '',
+    limit ?? '',
+    offset ?? '',
+  ],
+  diarioCorreoPostsInfinite: ({
+    search = '',
+    diario_correo_feed_id = '',
+    approval_status = '',
+    limit = '',
+  } = {}) => [
+    'diarioCorreoPosts',
+    'infinite',
+    search || '',
+    diario_correo_feed_id || '',
+    approval_status || '',
+    limit ?? '',
+  ],
+
+  // YouTube
+  youtubeFeeds: ['youtubeFeeds'],
+  youtubeFeed: (id) => ['youtubeFeeds', id],
+  youtubePosts: ['youtubePosts'],
+  youtubePost: (id) => ['youtubePosts', id],
+  youtubePostsList: ({
+    search = '',
+    category = '',
+    youtube_feed_id = '',
+    limit = '',
+    offset = '',
+  } = {}) => [
+    'youtubePosts',
+    'list',
+    search || '',
+    category || '',
+    youtube_feed_id || '',
+    limit ?? '',
+    offset ?? '',
+  ],
+
+  // Scrapes
+  scrapes: ['scrapes'],
+  scrapesList: ({
+    search = '',
+    content_type = '',
+    approval_status = '',
+    limit = '',
+    offset = '',
+  } = {}) => [
+    'scrapes',
+    'list',
+    search || '',
+    content_type || '',
+    approval_status || '',
+    limit ?? '',
+    offset ?? '',
+  ],
+  scrapesInfinite: ({
+    search = '',
+    content_type = '',
+    approval_status = '',
+    limit = '',
+  } = {}) => [
+    'scrapes',
+    'infinite',
+    search || '',
+    content_type || '',
+    approval_status || '',
+    limit ?? '',
+  ],
+
   // Approval Queue
   approvalPending: (contentType = 'all') => ['approval', 'pending', contentType || 'all'],
   approvalStats: ['approval', 'stats'],

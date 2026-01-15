@@ -52,7 +52,8 @@ const CONTENT_TYPE_LABELS = {
   instagram_post: 'Instagram Post',
   reddit_post: 'Reddit Post',
   telegram_post: 'Telegram Message',
-  el_comercio_post: 'El Comercio Article'
+  el_comercio_post: 'El Comercio Article',
+  diario_correo_post: 'Diario Correo Article'
 };
 
 const LANGUAGE_NAMES = {
@@ -266,6 +267,12 @@ export default function ApprovalQueue() {
             onClick={() => setFilter('el_comercio_post')}
           >
             El Comercio ({stats?.el_comercio_post?.pending || 0})
+          </button>
+          <button
+            className={filter === 'diario_correo_post' ? 'active' : ''}
+            onClick={() => setFilter('diario_correo_post')}
+          >
+            Diario Correo ({stats?.diario_correo_post?.pending || 0})
           </button>
         </div>
       </div>

@@ -12,6 +12,17 @@ def clear_all_data():
         cursor = conn.cursor()
 
         # Delete all data from all tables
+        cursor.execute("DELETE FROM diario_correo_posts")
+        cursor.execute("DELETE FROM diario_correo_fetch_logs")
+        cursor.execute("DELETE FROM diario_correo_feed_tag_map")
+        cursor.execute("DELETE FROM diario_correo_feeds")
+        cursor.execute("DELETE FROM youtube_posts")
+        cursor.execute("DELETE FROM youtube_fetch_logs")
+        cursor.execute("DELETE FROM youtube_feeds")
+        cursor.execute("DELETE FROM el_comercio_posts")
+        cursor.execute("DELETE FROM el_comercio_fetch_logs")
+        cursor.execute("DELETE FROM el_comercio_feed_tag_map")
+        cursor.execute("DELETE FROM el_comercio_feeds")
         cursor.execute("DELETE FROM telegram_posts")
         cursor.execute("DELETE FROM telegram_fetch_logs")
         cursor.execute("DELETE FROM telegram_feed_tag_map")
@@ -43,6 +54,17 @@ def clear_all_data():
                 "feed_tag_map",
                 "leads",
                 "fetch_logs",
+                "el_comercio_feeds",
+                "el_comercio_feed_tag_map",
+                "el_comercio_posts",
+                "el_comercio_fetch_logs",
+                "diario_correo_feeds",
+                "diario_correo_feed_tag_map",
+                "diario_correo_posts",
+                "diario_correo_fetch_logs",
+                "youtube_feeds",
+                "youtube_posts",
+                "youtube_fetch_logs",
                 "instagram_feeds",
                 "instagram_feed_tag_map",
                 "instagram_posts",
@@ -68,6 +90,12 @@ def clear_fetched_data():
         # Delete only fetched content and logs
         cursor.execute("DELETE FROM fetch_logs")
         cursor.execute("DELETE FROM leads")
+        cursor.execute("DELETE FROM el_comercio_posts")
+        cursor.execute("DELETE FROM el_comercio_fetch_logs")
+        cursor.execute("DELETE FROM diario_correo_posts")
+        cursor.execute("DELETE FROM diario_correo_fetch_logs")
+        cursor.execute("DELETE FROM youtube_posts")
+        cursor.execute("DELETE FROM youtube_fetch_logs")
         cursor.execute("DELETE FROM instagram_posts")
         cursor.execute("DELETE FROM instagram_fetch_logs")
         cursor.execute("DELETE FROM telegram_posts")
@@ -79,6 +107,12 @@ def clear_fetched_data():
                WHERE name IN (
                    'leads',
                    'fetch_logs',
+                   'el_comercio_posts',
+                   'el_comercio_fetch_logs',
+                   'diario_correo_posts',
+                   'diario_correo_fetch_logs',
+                   'youtube_posts',
+                   'youtube_fetch_logs',
                    'instagram_posts',
                    'instagram_fetch_logs',
                    'telegram_posts',
@@ -94,6 +128,12 @@ def clear_fetched_data():
             "cleared": [
                 "leads",
                 "fetch_logs",
+                "el_comercio_posts",
+                "el_comercio_fetch_logs",
+                "diario_correo_posts",
+                "diario_correo_fetch_logs",
+                "youtube_posts",
+                "youtube_fetch_logs",
                 "instagram_posts",
                 "instagram_fetch_logs",
                 "telegram_posts",
@@ -104,6 +144,11 @@ def clear_fetched_data():
                 "feeds",
                 "feed_tags",
                 "feed_tag_map",
+                "el_comercio_feeds",
+                "el_comercio_feed_tag_map",
+                "diario_correo_feeds",
+                "diario_correo_feed_tag_map",
+                "youtube_feeds",
                 "instagram_feeds",
                 "instagram_feed_tag_map",
                 "reddit_feeds",

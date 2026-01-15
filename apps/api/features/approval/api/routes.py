@@ -164,6 +164,35 @@ async def get_pending_content(
             'translation_status': post['translation_status'],
         } for post in el_comercio])
 
+    # Fetch pending Diario Correo posts
+    if not content_type or content_type == 'diario_correo_post':
+        diario_correo = fetch_all(
+            """SELECT dcp.id,
+                      COALESCE(NULLIF(dcp.title_translated, ''), dcp.title) AS title,
+                      COALESCE(NULLIF(dcp.excerpt_translated, ''), dcp.excerpt) AS excerpt,
+                      dcp.detected_language,
+                      dcp.translation_status,
+                      dcp.url, dcp.collected_at, dcp.image_url, dcf.display_name
+               FROM diario_correo_posts dcp
+               JOIN diario_correo_feeds dcf ON dcp.diario_correo_feed_id = dcf.id
+               WHERE dcp.approval_status = 'pending'
+               ORDER BY dcp.collected_at DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
+        items.extend([{
+            'content_type': 'diario_correo_post',
+            'content_id': post['id'],
+            'title': post['title'],
+            'summary': post['excerpt'],
+            'source_name': post['display_name'],
+            'collected_at': post['collected_at'],
+            'image_url': post['image_url'],
+            'link': post['url'],
+            'detected_language': post['detected_language'],
+            'translation_status': post['translation_status'],
+        } for post in diario_correo])
+
     # Sort all items by collected_at descending
     items.sort(key=lambda x: x['collected_at'], reverse=True)
 
@@ -180,7 +209,8 @@ async def approve_content(request: ApprovalRequest):
         'instagram_post': 'instagram_posts',
         'reddit_post': 'reddit_posts',
         'telegram_post': 'telegram_posts',
-        'el_comercio_post': 'el_comercio_posts'
+        'el_comercio_post': 'el_comercio_posts',
+        'diario_correo_post': 'diario_correo_posts'
     }
 
     table = table_map.get(request.content_type)
@@ -213,7 +243,8 @@ async def batch_approve_content(request: BatchApprovalRequest):
                 'instagram_post': 'instagram_posts',
                 'reddit_post': 'reddit_posts',
                 'telegram_post': 'telegram_posts',
-                'el_comercio_post': 'el_comercio_posts'
+                'el_comercio_post': 'el_comercio_posts',
+                'diario_correo_post': 'diario_correo_posts'
             }
 
             table = table_map.get(item.content_type)
@@ -264,7 +295,8 @@ async def get_approval_stats():
         'instagram_posts': 'instagram_post',
         'reddit_posts': 'reddit_post',
         'telegram_posts': 'telegram_post',
-        'el_comercio_posts': 'el_comercio_post'
+        'el_comercio_posts': 'el_comercio_post',
+        'diario_correo_posts': 'diario_correo_post'
     }
 
     for table, content_type in tables.items():

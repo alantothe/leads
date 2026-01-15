@@ -19,6 +19,9 @@ from features.subreddits.api.routes import router as subreddits_router
 from features.translation.api.routes import router as translation_router
 from features.approval.api.routes import router as approval_router
 from features.el_comercio_feeds.api.routes import router as el_comercio_feeds_router
+from features.diario_correo_feeds.api.routes import router as diario_correo_feeds_router
+from features.scrapes.api.routes import router as scrapes_router
+from features.youtube_feeds.api.routes import router as youtube_feeds_router
 
 # Import Telegram router
 from features.telegram.api.routes import router as telegram_router
@@ -70,6 +73,9 @@ app.include_router(translation_router)
 app.include_router(telegram_router)
 app.include_router(approval_router)
 app.include_router(el_comercio_feeds_router)
+app.include_router(diario_correo_feeds_router)
+app.include_router(scrapes_router)
+app.include_router(youtube_feeds_router)
 app.include_router(dev_router)
 
 

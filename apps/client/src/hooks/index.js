@@ -1,6 +1,8 @@
 export * from './useApproval';
 export * from './useCategories';
 export * from './useDashboardStats';
+export * from './useDiarioCorreoFeeds';
+export * from './useDiarioCorreoPosts';
 export * from './useElComercioFeeds';
 export * from './useElComercioPosts';
 export * from './useFeeds';
@@ -8,5 +10,8 @@ export * from './useFetchLogs';
 export * from './useInstagramFeeds';
 export * from './useInstagramPosts';
 export * from './useLeads';
+export * from './useScrapes';
 export * from './useSubreddits';
 export * from './useTags';
+export * from './useYouTubeFeeds';
+export * from './useYouTubePosts';

@@ -1,26 +1,26 @@
 """
-FastAPI routes for El Comercio feeds.
+FastAPI routes for Diario Correo feeds.
 """
 
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict
 
-from features.el_comercio_feeds.schema.models import (
-    ElComercioFeedResponse,
-    ElComercioPostResponse,
+from features.diario_correo_feeds.schema.models import (
+    DiarioCorreoFeedResponse,
+    DiarioCorreoPostResponse,
 )
-from features.el_comercio_feeds.service.fetcher import (
-    fetch_el_comercio_feed,
+from features.diario_correo_feeds.service.fetcher import (
+    fetch_diario_correo_feed,
     fetch_one,
     fetch_all,
-    execute_query
+    execute_query,
 )
 
-router = APIRouter(prefix="/el-comercio-feeds", tags=["el-comercio-feeds"])
+router = APIRouter(prefix="/diario-correo-feeds", tags=["diario-correo-feeds"])
 
 DEFAULT_CATEGORY_NAME = "Peru"
-DEFAULT_FEED_URL = "https://elcomercio.pe/archivo/gastronomia/"
-DEFAULT_DISPLAY_NAME = "El Comercio Gastronomia"
+DEFAULT_FEED_URL = "https://diariocorreo.pe/gastronomia/"
+DEFAULT_DISPLAY_NAME = "Diario Correo Gastronomia"
 DEFAULT_SECTION = "gastronomia"
 DEFAULT_FETCH_INTERVAL = 60
 
@@ -36,13 +36,13 @@ def ensure_category_id() -> int:
 
 
 def ensure_feed() -> dict:
-    feed = fetch_one("SELECT * FROM el_comercio_feeds ORDER BY id LIMIT 1", ())
+    feed = fetch_one("SELECT * FROM diario_correo_feeds ORDER BY id LIMIT 1", ())
     if feed:
         return feed
 
     category_id = ensure_category_id()
     feed_id = execute_query(
-        """INSERT INTO el_comercio_feeds
+        """INSERT INTO diario_correo_feeds
            (category_id, url, display_name, section, fetch_interval, is_active)
            VALUES (?, ?, ?, ?, ?, 1)""",
         (
@@ -53,32 +53,29 @@ def ensure_feed() -> dict:
             DEFAULT_FETCH_INTERVAL,
         ),
     )
-    return fetch_one("SELECT * FROM el_comercio_feeds WHERE id = ?", (feed_id,))
+    return fetch_one("SELECT * FROM diario_correo_feeds WHERE id = ?", (feed_id,))
 
 
-# Feed Operations
-
-
-@router.get("/posts", response_model=List[ElComercioPostResponse])
+@router.get("/posts", response_model=List[DiarioCorreoPostResponse])
 def get_posts(
     search: Optional[str] = Query(None),
-    el_comercio_feed_id: Optional[int] = Query(None),
+    diario_correo_feed_id: Optional[int] = Query(None),
     approval_status: Optional[str] = Query(None),
     limit: Optional[int] = Query(15, ge=1, le=1000),
-    offset: Optional[int] = Query(0, ge=0)
+    offset: Optional[int] = Query(0, ge=0),
 ):
     """
-    Get El Comercio posts with filters.
+    Get Diario Correo posts with filters.
 
     Args:
         search: Search in title and excerpt
-        el_comercio_feed_id: Filter by feed ID
+        diario_correo_feed_id: Filter by feed ID
         approval_status: Filter by approval status (pending, approved, rejected)
         limit: Max results (default 15, max 1000)
         offset: Pagination offset
     """
     query = """
-        SELECT * FROM el_comercio_posts
+        SELECT * FROM diario_correo_posts
         WHERE 1=1
     """
     params = []
@@ -88,9 +85,9 @@ def get_posts(
         search_term = f"%{search}%"
         params.extend([search_term, search_term])
 
-    if el_comercio_feed_id is not None:
-        query += " AND el_comercio_feed_id = ?"
-        params.append(el_comercio_feed_id)
+    if diario_correo_feed_id is not None:
+        query += " AND diario_correo_feed_id = ?"
+        params.append(diario_correo_feed_id)
 
     if approval_status:
         query += " AND approval_status = ?"
@@ -100,18 +97,18 @@ def get_posts(
     params.extend([limit, offset])
 
     posts = fetch_all(query, tuple(params))
-    return [ElComercioPostResponse(**p) for p in posts]
+    return [DiarioCorreoPostResponse(**p) for p in posts]
 
 
-@router.get("", response_model=List[ElComercioFeedResponse])
+@router.get("", response_model=List[DiarioCorreoFeedResponse])
 def get_feeds(
     category_id: Optional[int] = Query(None),
     is_active: Optional[int] = Query(None),
     limit: Optional[int] = Query(None, ge=1),
-    offset: Optional[int] = Query(0, ge=0)
+    offset: Optional[int] = Query(0, ge=0),
 ):
-    """Get all El Comercio feeds with optional filters."""
-    query = "SELECT * FROM el_comercio_feeds WHERE 1=1"
+    """Get all Diario Correo feeds with optional filters."""
+    query = "SELECT * FROM diario_correo_feeds WHERE 1=1"
     params = []
 
     if category_id is not None:
@@ -129,19 +126,17 @@ def get_feeds(
         params.extend([limit, offset])
 
     feeds = fetch_all(query, tuple(params))
-    return [ElComercioFeedResponse(**f) for f in feeds]
+    return [DiarioCorreoFeedResponse(**f) for f in feeds]
 
 
-@router.get("/{feed_id}", response_model=ElComercioFeedResponse)
+@router.get("/{feed_id}", response_model=DiarioCorreoFeedResponse)
 def get_feed(feed_id: int):
-    """Get a single El Comercio feed by ID."""
-    feed = fetch_one("SELECT * FROM el_comercio_feeds WHERE id = ?", (feed_id,))
+    """Get a single Diario Correo feed by ID."""
+    feed = fetch_one("SELECT * FROM diario_correo_feeds WHERE id = ?", (feed_id,))
     if not feed:
         raise HTTPException(status_code=404, detail="Feed not found")
-    return ElComercioFeedResponse(**feed)
+    return DiarioCorreoFeedResponse(**feed)
 
-
-# Fetch Operations
 
 @router.post("/fetch", response_model=Dict)
 def trigger_fetch():
@@ -155,11 +150,11 @@ def trigger_fetch():
     existing = ensure_feed()
 
     try:
-        result = fetch_el_comercio_feed(existing["id"])
+        result = fetch_diario_correo_feed(existing["id"])
         return {
-            "el_comercio_feed_id": existing["id"],
+            "diario_correo_feed_id": existing["id"],
             "display_name": existing["display_name"],
-            **result
+            **result,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -168,39 +163,26 @@ def trigger_fetch():
 @router.post("/fetch-all", response_model=List[Dict])
 def trigger_fetch_all():
     """
-    Trigger fetch for all active El Comercio feeds.
+    Trigger fetch for all active Diario Correo feeds.
 
     IMPORTANT: This endpoint BLOCKS while scraping all feeds.
     """
     try:
         existing = ensure_feed()
-        result = fetch_el_comercio_feed(existing["id"])
+        result = fetch_diario_correo_feed(existing["id"])
         return [{
-            "el_comercio_feed_id": existing["id"],
+            "diario_correo_feed_id": existing["id"],
             "display_name": existing["display_name"],
-            **result
+            **result,
         }]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/posts/{post_id}", response_model=ElComercioPostResponse)
+@router.get("/posts/{post_id}", response_model=DiarioCorreoPostResponse)
 def get_post(post_id: int):
-    """Get a single El Comercio post by ID."""
-    post = fetch_one("SELECT * FROM el_comercio_posts WHERE id = ?", (post_id,))
+    """Get a single Diario Correo post by ID."""
+    post = fetch_one("SELECT * FROM diario_correo_posts WHERE id = ?", (post_id,))
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-    return ElComercioPostResponse(**post)
-
-
-@router.delete("/posts/{post_id}", status_code=204)
-def delete_post(post_id: int):
-    """Delete an El Comercio post."""
-    existing = fetch_one("SELECT * FROM el_comercio_posts WHERE id = ?", (post_id,))
-    if not existing:
-        raise HTTPException(status_code=404, detail="Post not found")
-
-    try:
-        execute_query("DELETE FROM el_comercio_posts WHERE id = ?", (post_id,))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return DiarioCorreoPostResponse(**post)

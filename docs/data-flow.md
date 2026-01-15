@@ -21,6 +21,10 @@ flowchart LR
   InstaFetch --> RapidAPI[RapidAPI Instagram]
   InstaFetch --> DB
 
+  API -->|/youtube-feeds/*/fetch| YouTubeFetch[YouTube Fetch]
+  YouTubeFetch --> YouTubeAPI[YouTube Data API]
+  YouTubeFetch --> DB
+
   API -->|/telegram/*| TelegramSvc[Telegram Service]
   TelegramSvc --> TelegramAPI[Telegram API]
   TelegramSvc --> DB
@@ -71,6 +75,12 @@ The API client is `apps/client/src/api.js` with `API_BASE = http://localhost:800
 2) Create/edit -> `POST /instagram-feeds` or `PUT /instagram-feeds/{id}`.
 3) Fetch now -> `POST /instagram-feeds/{id}/fetch` or `POST /instagram-feeds/fetch-all`.
 4) Posts view -> `GET /instagram-feeds/posts`.
+
+### YouTube feeds/posts (`apps/client/src/pages/YouTubeFeeds.jsx`, `apps/client/src/pages/YouTubePosts.jsx`)
+1) UI loads feeds -> `GET /youtube-feeds`.
+2) Create/edit -> `POST /youtube-feeds` or `PUT /youtube-feeds/{id}`.
+3) Fetch now -> `POST /youtube-feeds/{id}/fetch?max_results=5` or `POST /youtube-feeds/fetch-all`.
+4) Posts view -> `GET /youtube-feeds/posts`.
 
 ### Subreddits (`apps/client/src/pages/Subreddits.jsx`)
 1) UI loads subreddits -> `GET /subreddits`.
@@ -155,6 +165,17 @@ Endpoints: `apps/api/features/instagram_feeds/api/routes.py`
 5) Insert into `instagram_posts` and log into `instagram_fetch_logs`.
 6) Update `instagram_feeds.last_fetched` and `last_max_id` for pagination.
 
+## YouTube flow (main API)
+
+Endpoints: `apps/api/features/youtube_feeds/api/routes.py`
+
+1) Fetch triggered via `POST /youtube-feeds/{id}/fetch` or `/fetch-all`.
+2) `fetch_youtube_feed` calls the YouTube Data API search endpoint.
+3) Videos are deduped on `youtube_posts.video_id`.
+4) Inserted with `approval_status='approved'` (auto-approved).
+5) Logs written to `youtube_fetch_logs`.
+6) `youtube_feeds.last_fetched` updated.
+
 ## Telegram flow (shared module + optional service)
 
 Endpoints: `apps/telegram/features/telegram/api/routes.py`
@@ -188,6 +209,7 @@ Endpoints: `apps/telegram/features/telegram/api/routes.py`
 - RSS leads: `leads`, `fetch_logs`
 - Instagram feeds: `instagram_feeds`, `instagram_feed_tag_map`
 - Instagram posts/logs: `instagram_posts`, `instagram_fetch_logs`
+- YouTube feeds/posts/logs: `youtube_feeds`, `youtube_posts`, `youtube_fetch_logs`
 - Subreddits: `reddit_feeds`
 - Telegram feeds/posts/logs: `telegram_feeds`, `telegram_posts`, `telegram_fetch_logs`
 

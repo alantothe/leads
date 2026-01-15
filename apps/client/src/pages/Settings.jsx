@@ -38,7 +38,7 @@ export default function Settings() {
 
   async function handleClearFetched() {
     const confirmed = await dialog.confirm(
-      'Clear all fetched content and logs (articles, Instagram, Telegram)? This will keep categories, feeds, tags, and feed mappings.',
+      'Clear all fetched content and logs (articles, Instagram, YouTube, Telegram, El Comercio, Diario Correo)? This will keep categories, feeds, tags, and feed mappings.',
     );
     if (!confirmed) {
       return;
@@ -52,7 +52,7 @@ export default function Settings() {
 
   async function handleClearAll() {
     const confirmed = await dialog.confirm(
-      'WARNING: Clear ALL data including categories, feeds, tags, subreddits, posts, and logs across articles, Instagram, and Telegram? This cannot be undone!',
+      'WARNING: Clear ALL data including categories, feeds, tags, subreddits, posts, and logs across articles, Instagram, YouTube, Telegram, El Comercio, and Diario Correo? This cannot be undone!',
     );
     if (!confirmed) {
       return;

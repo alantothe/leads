@@ -71,6 +71,12 @@ export function useApproveItem() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['approval', 'pending'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.approvalStats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.leads });
+      queryClient.invalidateQueries({ queryKey: queryKeys.instagramPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.elComercioPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diarioCorreoPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scrapes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },
   });
 }
@@ -115,6 +121,12 @@ export function useRejectItem() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['approval', 'pending'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.approvalStats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.leads });
+      queryClient.invalidateQueries({ queryKey: queryKeys.instagramPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.elComercioPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diarioCorreoPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scrapes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },
   });
 }
@@ -127,6 +139,12 @@ export function useBatchApprove() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['approval', 'pending'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.approvalStats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.leads });
+      queryClient.invalidateQueries({ queryKey: queryKeys.instagramPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.elComercioPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diarioCorreoPosts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scrapes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },
   });
 }
