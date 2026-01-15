@@ -6,6 +6,8 @@ bun.lockb
 AGENTS.md
 CLAUDE.md
 .turbo/cookies/*.cookie
+# LibreTranslate model data (large binaries)
+libretranslate-data/
 # SQLite
 *.db
 *.db-shm
