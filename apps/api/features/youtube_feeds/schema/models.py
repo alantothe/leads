@@ -49,6 +49,10 @@ class YouTubePostResponse(BaseModel):
     approved_by: Optional[str] = None
     approved_at: Optional[str] = None
     approval_notes: Optional[str] = None
+    transcript: Optional[str] = None
+    transcript_status: Optional[str] = None
+    transcript_error: Optional[str] = None
+    transcript_extracted_at: Optional[str] = None
 
 
 class YouTubeVideo(BaseModel):
@@ -60,3 +64,12 @@ class YouTubeVideo(BaseModel):
     channel_title: Optional[str] = None
     thumbnail_url: Optional[str] = None
     video_url: Optional[str] = None
+
+
+class TranscriptResponse(BaseModel):
+    post_id: int
+    video_id: str
+    transcript: Optional[str] = None
+    transcript_status: Optional[str] = None
+    transcript_error: Optional[str] = None
+    transcript_extracted_at: Optional[str] = None

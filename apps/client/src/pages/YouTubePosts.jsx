@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useCategories, useYouTubeFeeds, useYouTubePostsList } from '../hooks';
+import { useCategories, useYouTubeFeeds, useYouTubePostsList, useExtractYouTubeTranscript } from '../hooks';
+import { youtubePostsApi } from '../api';
 
 export default function YouTubePosts() {
   const [filters, setFilters] = useState({
@@ -8,6 +9,7 @@ export default function YouTubePosts() {
     category: '',
     youtube_feed_id: '',
   });
+  const [transcriptStates, setTranscriptStates] = useState({});
 
   const {
     data: posts = [],
@@ -26,8 +28,35 @@ export default function YouTubePosts() {
     error: categoriesError,
   } = useCategories();
 
+  const extractTranscript = useExtractYouTubeTranscript();
+
   const isLoading = postsLoading || feedsLoading || categoriesLoading;
   const error = postsError || feedsError || categoriesError;
+
+  async function handleExtractTranscript(postId) {
+    setTranscriptStates((prev) => ({ ...prev, [postId]: { loading: true } }));
+    try {
+      const result = await extractTranscript.mutateAsync(postId);
+      setTranscriptStates((prev) => ({
+        ...prev,
+        [postId]: {
+          loading: false,
+          status: result.transcript_status,
+          error: result.transcript_error,
+          hasTranscript: !!result.transcript,
+        },
+      }));
+    } catch (err) {
+      setTranscriptStates((prev) => ({
+        ...prev,
+        [postId]: { loading: false, error: err.message },
+      }));
+    }
+  }
+
+  function handleDownloadTranscript(postId) {
+    window.open(youtubePostsApi.downloadTranscriptUrl(postId), '_blank');
+  }
 
   function getFeedName(feedId) {
     const feed = feeds.find((item) => item.id === feedId);
@@ -143,6 +172,56 @@ export default function YouTubePosts() {
 
                 <div className="lead-footer">
                   <small>Collected: {new Date(post.collected_at).toLocaleString()}</small>
+                </div>
+
+                <div className="transcript-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {(() => {
+                    const state = transcriptStates[post.id];
+                    const hasExistingTranscript = post.transcript_status === 'completed';
+                    const isUnavailable = post.transcript_status === 'unavailable' || state?.status === 'unavailable';
+
+                    if (state?.loading) {
+                      return <span className="badge">Extracting transcript...</span>;
+                    }
+
+                    if (hasExistingTranscript || state?.hasTranscript) {
+                      return (
+                        <button
+                          className="button"
+                          onClick={() => handleDownloadTranscript(post.id)}
+                        >
+                          Download Transcript
+                        </button>
+                      );
+                    }
+
+                    if (isUnavailable) {
+                      return <span className="badge" style={{ background: '#888' }}>No transcript available</span>;
+                    }
+
+                    if (state?.error && state?.status === 'failed') {
+                      return (
+                        <>
+                          <span className="badge" style={{ background: '#c00' }}>Failed</span>
+                          <button
+                            className="button secondary"
+                            onClick={() => handleExtractTranscript(post.id)}
+                          >
+                            Retry
+                          </button>
+                        </>
+                      );
+                    }
+
+                    return (
+                      <button
+                        className="button secondary"
+                        onClick={() => handleExtractTranscript(post.id)}
+                      >
+                        Get Transcript
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             );

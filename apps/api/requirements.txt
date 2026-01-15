@@ -10,3 +10,4 @@ libretranslate==1.5.7
 scrapy>=2.11.0
 scrapy-playwright>=0.0.36
 playwright>=1.40.0
+youtube-transcript-api>=1.0.0

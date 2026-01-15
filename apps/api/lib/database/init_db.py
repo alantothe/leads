@@ -649,8 +649,33 @@ def add_youtube_tables():
     print("✅ YouTube tables created")
 
 
+def add_youtube_transcript_columns():
+    """Add transcript columns to youtube_posts table."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    def column_exists(table_name, column_name):
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column_name in columns
+
+    if not column_exists('youtube_posts', 'transcript'):
+        cursor.execute("ALTER TABLE youtube_posts ADD COLUMN transcript TEXT")
+    if not column_exists('youtube_posts', 'transcript_status'):
+        cursor.execute("ALTER TABLE youtube_posts ADD COLUMN transcript_status TEXT")
+    if not column_exists('youtube_posts', 'transcript_error'):
+        cursor.execute("ALTER TABLE youtube_posts ADD COLUMN transcript_error TEXT")
+    if not column_exists('youtube_posts', 'transcript_extracted_at'):
+        cursor.execute("ALTER TABLE youtube_posts ADD COLUMN transcript_extracted_at TEXT")
+
+    conn.commit()
+    conn.close()
+    print("✅ YouTube transcript columns added")
+
+
 if __name__ == "__main__":
     init_database()
     add_el_comercio_tables()
     add_diario_correo_tables()
     add_youtube_tables()
+    add_youtube_transcript_columns()

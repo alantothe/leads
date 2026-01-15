@@ -1,4 +1,6 @@
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from typing import Dict, List, Optional
 
 from features.youtube_feeds.schema.models import (
@@ -6,11 +8,13 @@ from features.youtube_feeds.schema.models import (
     YouTubeFeedUpdate,
     YouTubeFeedResponse,
     YouTubePostResponse,
+    TranscriptResponse,
 )
 from features.youtube_feeds.service.fetcher import (
     fetch_all_active_youtube_feeds,
     fetch_youtube_feed,
 )
+from features.youtube_feeds.service.transcript_extractor import extract_transcript_sync
 from lib.database import fetch_all, fetch_one, execute_query
 
 router = APIRouter(prefix="/youtube-feeds", tags=["youtube-feeds"])
@@ -233,3 +237,102 @@ def delete_youtube_feed(feed_id: int):
         raise HTTPException(status_code=404, detail="YouTube feed not found")
 
     execute_query("DELETE FROM youtube_feeds WHERE id = ?", (feed_id,))
+
+
+@router.post("/posts/{post_id}/transcript", response_model=TranscriptResponse)
+def extract_post_transcript(post_id: int) -> TranscriptResponse:
+    """Extract transcript from a YouTube video using Playwright."""
+    post = fetch_one("SELECT * FROM youtube_posts WHERE id = ?", (post_id,))
+    if not post:
+        raise HTTPException(status_code=404, detail="YouTube post not found")
+
+    video_id = post.get("video_id")
+    if not video_id:
+        raise HTTPException(status_code=400, detail="Post has no video_id")
+
+    # Update status to extracting
+    execute_query(
+        "UPDATE youtube_posts SET transcript_status = ? WHERE id = ?",
+        ("extracting", post_id)
+    )
+
+    # Extract transcript using Playwright
+    result = extract_transcript_sync(video_id)
+
+    # Update database with result
+    now = datetime.utcnow().isoformat()
+    if result["status"] == "completed":
+        execute_query(
+            """UPDATE youtube_posts
+               SET transcript = ?, transcript_status = ?, transcript_error = NULL, transcript_extracted_at = ?
+               WHERE id = ?""",
+            (result["transcript"], "completed", now, post_id)
+        )
+    elif result["status"] == "unavailable":
+        execute_query(
+            """UPDATE youtube_posts
+               SET transcript = NULL, transcript_status = ?, transcript_error = ?, transcript_extracted_at = ?
+               WHERE id = ?""",
+            ("unavailable", result.get("error"), now, post_id)
+        )
+    else:
+        execute_query(
+            """UPDATE youtube_posts
+               SET transcript = NULL, transcript_status = ?, transcript_error = ?, transcript_extracted_at = ?
+               WHERE id = ?""",
+            ("failed", result.get("error"), now, post_id)
+        )
+
+    # Return updated post transcript info
+    updated = fetch_one("SELECT * FROM youtube_posts WHERE id = ?", (post_id,))
+    return TranscriptResponse(
+        post_id=post_id,
+        video_id=video_id,
+        transcript=updated.get("transcript"),
+        transcript_status=updated.get("transcript_status"),
+        transcript_error=updated.get("transcript_error"),
+        transcript_extracted_at=updated.get("transcript_extracted_at")
+    )
+
+
+@router.get("/posts/{post_id}/transcript", response_model=TranscriptResponse)
+def get_post_transcript(post_id: int) -> TranscriptResponse:
+    """Get transcript status and content for a YouTube post."""
+    post = fetch_one("SELECT * FROM youtube_posts WHERE id = ?", (post_id,))
+    if not post:
+        raise HTTPException(status_code=404, detail="YouTube post not found")
+
+    return TranscriptResponse(
+        post_id=post_id,
+        video_id=post.get("video_id"),
+        transcript=post.get("transcript"),
+        transcript_status=post.get("transcript_status"),
+        transcript_error=post.get("transcript_error"),
+        transcript_extracted_at=post.get("transcript_extracted_at")
+    )
+
+
+@router.get("/posts/{post_id}/transcript/download")
+def download_post_transcript(post_id: int):
+    """Download transcript as a plain text file."""
+    post = fetch_one("SELECT * FROM youtube_posts WHERE id = ?", (post_id,))
+    if not post:
+        raise HTTPException(status_code=404, detail="YouTube post not found")
+
+    transcript = post.get("transcript")
+    if not transcript:
+        raise HTTPException(status_code=404, detail="No transcript available")
+
+    # Create filename from title
+    title = post.get("title", "transcript")
+    # Clean title for filename
+    safe_title = "".join(c if c.isalnum() or c in " -_" else "" for c in title)
+    safe_title = safe_title[:50].strip() or "transcript"
+    filename = f"{safe_title}.txt"
+
+    return PlainTextResponse(
+        content=transcript,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )

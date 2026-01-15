@@ -52,3 +52,23 @@ export function useDeleteYouTubePost() {
     },
   });
 }
+
+export function useYouTubeTranscript(postId) {
+  return useQuery({
+    queryKey: ['youtubeTranscript', postId],
+    queryFn: () => youtubePostsApi.getTranscript(postId),
+    enabled: !!postId,
+  });
+}
+
+export function useExtractYouTubeTranscript() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (postId) => youtubePostsApi.extractTranscript(postId),
+    onSuccess: (data, postId) => {
+      queryClient.setQueryData(['youtubeTranscript', postId], data);
+      queryClient.invalidateQueries({ queryKey: ['youtubePosts', 'list'] });
+    },
+  });
+}

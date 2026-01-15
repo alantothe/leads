@@ -208,6 +208,9 @@ export const youtubePostsApi = {
   },
   getById: (id) => request(`/youtube-feeds/posts/${id}`),
   delete: (id) => request(`/youtube-feeds/posts/${id}`, { method: 'DELETE' }),
+  getTranscript: (id) => request(`/youtube-feeds/posts/${id}/transcript`),
+  extractTranscript: (id) => request(`/youtube-feeds/posts/${id}/transcript`, { method: 'POST' }),
+  downloadTranscriptUrl: (id) => `${API_BASE}/youtube-feeds/posts/${id}/transcript/download`,
 };
 
 // Unified Scrapes API
