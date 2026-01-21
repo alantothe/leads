@@ -13,7 +13,7 @@ import json
 import sys
 import re
 import urllib.parse
-import urllib.request
+import requests
 
 from features.translation.service.translator import get_translator
 
@@ -58,9 +58,23 @@ def execute_query(query: str, params: tuple) -> int:
 
 def fetch_html(url: str) -> str:
     """Fetch raw HTML for a page using a stable user-agent."""
-    request = urllib.request.Request(url, headers={"User-Agent": DEFAULT_USER_AGENT})
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return response.read().decode("utf-8", errors="ignore")
+    try:
+        response = requests.get(
+            url,
+            headers={"User-Agent": DEFAULT_USER_AGENT},
+            timeout=30
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or "utf-8"
+        return response.text
+    except requests.exceptions.SSLError as exc:
+        raise Exception(
+            "SSL verification failed while fetching Diario Correo HTML. "
+            "If this is local dev, install/update CA certificates or configure "
+            "REQUESTS_CA_BUNDLE to a valid cert store."
+        ) from exc
+    except requests.RequestException as exc:
+        raise Exception(f"Failed to fetch Diario Correo HTML: {exc}") from exc
 
 
 def extract_content_cache(html: str) -> Optional[Dict[str, Any]]:

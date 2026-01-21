@@ -1,4 +1,5 @@
-export const API_BASE = 'http://localhost:8000';
+const DEFAULT_API_BASE = 'http://localhost:8428';
+export const API_BASE = import.meta.env.VITE_API_BASE || DEFAULT_API_BASE;
 
 export function instagramPostImageUrl(postId) {
   return `${API_BASE}/instagram-feeds/posts/${postId}/image`;

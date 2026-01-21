@@ -382,7 +382,7 @@ export default function Dashboard() {
       categoryNames.get(feedCategoryIds.get(lead.feed_id)) || categoryFilter || 'Unknown';
 
     return (
-      <div key={`lead-${lead.id}`} className="lead-card">
+      <div key={`lead-${lead.id}`} className="lead-card lead-card-article">
         {lead.image_url && (
           <div className="lead-image">
             <img src={lead.image_url} alt={displayTitle} loading="lazy" />
@@ -401,7 +401,6 @@ export default function Dashboard() {
         </div>
 
         <div className="lead-badges">
-          <span className="badge">Article</span>
           <span className="badge">{categoryName}</span>
           <span className="badge">{feedNames.get(lead.feed_id) || 'Unknown Feed'}</span>
           {isTranslated && <span className="badge translation-badge">Translated</span>}
@@ -451,7 +450,7 @@ export default function Dashboard() {
       || 'Unknown';
 
     return (
-      <div key={`instagram-${post.id}`} className="lead-card">
+      <div key={`instagram-${post.id}`} className="lead-card lead-card-instagram">
         <div className="lead-header">
           <h3>
             {post.permalink ? (
@@ -465,7 +464,6 @@ export default function Dashboard() {
         </div>
 
         <div className="lead-badges">
-          <span className="badge instagram">Instagram Post</span>
           <span className="badge">{categoryName}</span>
           <span className="badge">
             {instagramFeedNames.get(post.instagram_feed_id) || 'Unknown Feed'}
@@ -538,7 +536,7 @@ export default function Dashboard() {
       || 'Unknown';
 
     return (
-      <div key={`el_comercio-${post.id}`} className="lead-card">
+      <div key={`el_comercio-${post.id}`} className="lead-card lead-card-el-comercio">
         {post.image_url && (
           <div className="lead-image">
             <img src={post.image_url} alt={displayTitle} loading="lazy" />
@@ -557,7 +555,6 @@ export default function Dashboard() {
         </div>
 
         <div className="lead-badges">
-          <span className="badge">El Comercio</span>
           <span className="badge">{categoryName}</span>
           <span className="badge">{elComercioFeedNames.get(post.el_comercio_feed_id) || 'Unknown Feed'}</span>
           {isTranslated && <span className="badge translation-badge">Translated</span>}
@@ -607,7 +604,7 @@ export default function Dashboard() {
       || 'Unknown';
 
     return (
-      <div key={`diario_correo-${post.id}`} className="lead-card">
+      <div key={`diario_correo-${post.id}`} className="lead-card lead-card-diario-correo">
         {post.image_url && (
           <div className="lead-image">
             <img src={post.image_url} alt={displayTitle} loading="lazy" />
@@ -626,7 +623,6 @@ export default function Dashboard() {
         </div>
 
         <div className="lead-badges">
-          <span className="badge">Diario Correo</span>
           <span className="badge">{categoryName}</span>
           <span className="badge">
             {diarioCorreoFeedNames.get(post.diario_correo_feed_id) || 'Unknown Feed'}
@@ -667,7 +663,7 @@ export default function Dashboard() {
       youtubeFeedNames.get(post.youtube_feed_id) || post.channel_title || 'Unknown Channel';
 
     return (
-      <div key={`youtube-${post.id}`} className="lead-card">
+      <div key={`youtube-${post.id}`} className="lead-card lead-card-youtube">
         {post.thumbnail_url && (
           <div className="lead-image">
             <img src={post.thumbnail_url} alt={post.title} loading="lazy" />
@@ -686,7 +682,6 @@ export default function Dashboard() {
         </div>
 
         <div className="lead-badges">
-          <span className="badge">YouTube</span>
           <span className="badge">{categoryName}</span>
           <span className="badge">{channelLabel}</span>
         </div>

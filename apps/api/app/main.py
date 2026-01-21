@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -20,9 +22,15 @@ from features.youtube_feeds.api.routes import router as youtube_feeds_router
 app = FastAPI(title="RSS Leads API")
 
 # Add CORS middleware
+origins_env = os.getenv("CORS_ALLOW_ORIGINS")
+if origins_env:
+    allow_origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
+else:
+    allow_origins = ["http://localhost:5317", "http://localhost:3000", "http://localhost:8428"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

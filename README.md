@@ -64,14 +64,14 @@ Terminal 1 - Backend:
 cd apps/api
 bun run dev
 ```
-Backend runs on http://localhost:8000
+Backend runs on http://localhost:8428
 
 Terminal 2 - Frontend:
 ```bash
 cd apps/client
 bun run dev
 ```
-Frontend runs on http://localhost:5173
+Frontend runs on http://localhost:5317
 
 **Option 2: Run with Turbo (recommended)**
 
@@ -90,8 +90,8 @@ docker compose up --build
 ```
 
 This starts:
-- API: http://localhost:8000
-- Frontend: http://localhost:5173
+- API: http://localhost:8428
+- Frontend: http://localhost:5317
 - LibreTranslate: http://localhost:5001
 
 Notes:
@@ -100,7 +100,7 @@ Notes:
 
 ### Access the Application
 
-Open your browser to http://localhost:5173
+Open your browser to http://localhost:5317
 
 ## Database Schema
 
@@ -199,8 +199,8 @@ The database comes pre-populated with:
 ## API Documentation
 
 Once the backend is running, visit:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:8428/docs
+- **ReDoc**: http://localhost:8428/redoc
 
 ## License
 

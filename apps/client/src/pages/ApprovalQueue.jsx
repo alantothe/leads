@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { instagramPostImageUrl } from '../api';
 import {
   useApprovalPending,
@@ -10,42 +9,6 @@ import {
 } from '../hooks';
 import { useDialog } from '../providers/DialogProvider';
 
-function ImageModal({ imageUrl, alt, isOpen, onClose }) {
-  if (!isOpen) return null;
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
-  return createPortal(
-    <div
-      className="image-modal-backdrop"
-      onClick={handleBackdropClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={-1}
-    >
-      <div className="image-modal-content">
-        <button
-          className="image-modal-close"
-          onClick={onClose}
-          aria-label="Close full image view"
-        >
-          ×
-        </button>
-        <img src={imageUrl} alt={alt} className="image-modal-image" />
-      </div>
-    </div>,
-    document.body
-  );
-}
 
 const CONTENT_TYPE_LABELS = {
   lead: 'Article',
@@ -122,7 +85,6 @@ function getLanguageName(code) {
 export default function ApprovalQueue() {
   const [filter, setFilter] = useState('all'); // 'all' or content_type
   const [approvedBy, setApprovedBy] = useState('admin'); // Default user
-  const [imageModal, setImageModal] = useState({ isOpen: false, imageUrl: '', alt: '' });
   const dialog = useDialog();
 
   const contentType = filter === 'all' ? null : filter;
@@ -150,13 +112,6 @@ export default function ApprovalQueue() {
     rejectMutation.isPending ||
     batchApproveMutation.isPending;
 
-  const openImageModal = (imageUrl, alt) => {
-    setImageModal({ isOpen: true, imageUrl, alt });
-  };
-
-  const closeImageModal = () => {
-    setImageModal({ isOpen: false, imageUrl: '', alt: '' });
-  };
 
   async function handleApprove(item) {
     try {
@@ -290,13 +245,6 @@ export default function ApprovalQueue() {
                 {imageUrl && (
                   <div className="approval-image">
                     <img src={imageUrl} alt={item.title} />
-                    <button
-                      className="view-full-image-btn"
-                      onClick={() => openImageModal(imageUrl, item.title)}
-                      aria-label="View full image"
-                    >
-                      🔍 View Full Image
-                    </button>
                   </div>
                 )}
 
@@ -355,13 +303,6 @@ export default function ApprovalQueue() {
           <p>No pending items to review!</p>
         </div>
       )}
-
-      <ImageModal
-        imageUrl={imageModal.imageUrl}
-        alt={imageModal.alt}
-        isOpen={imageModal.isOpen}
-        onClose={closeImageModal}
-      />
     </div>
   );
 }

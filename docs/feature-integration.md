@@ -9,7 +9,7 @@ the same pipeline.
 
 1) Pull data from the external source (API client, RSS parser, or scraper).
 2) Store items in SQLite with `approval_status = 'pending'`.
-3) Load pending items into the Approval queue at `http://localhost:5173/approval`.
+3) Load pending items into the Approval queue at `http://localhost:5317/approval`.
 4) On approval, update `approval_status = 'approved'`.
 5) The Home page uses only approved items and merges them into the feed.
 
@@ -93,6 +93,6 @@ the Approval queue and Home feed:
 ## Quick Smoke Test
 
 1) Trigger a fetch from the API.
-2) Confirm new items appear on `http://localhost:5173/approval`.
+2) Confirm new items appear on `http://localhost:5317/approval`.
 3) Approve one item.
 4) Confirm it shows on the Home page (and Scrapes page if applicable).
