@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from features.feed.api.routes import router as feed_router
 from features.categories.api.routes import router as categories_router
+from features.countries.api.routes import router as countries_router
 from features.feeds.api.routes import router as feeds_router
 from features.tags.api.routes import router as tags_router
 from features.leads.api.routes import router as leads_router
@@ -18,8 +19,13 @@ from features.el_comercio_feeds.api.routes import router as el_comercio_feeds_ro
 from features.diario_correo_feeds.api.routes import router as diario_correo_feeds_router
 from features.scrapes.api.routes import router as scrapes_router
 from features.youtube_feeds.api.routes import router as youtube_feeds_router
+from features.batch_fetch.api.routes import router as batch_fetch_router
+from lib.database.init_db import run_migrations
 
 app = FastAPI(title="RSS Leads API")
+
+def _should_run_migrations() -> bool:
+    return os.getenv("RUN_MIGRATIONS", "").strip().lower() in {"1", "true", "yes", "on"}
 
 # Add CORS middleware
 origins_env = os.getenv("CORS_ALLOW_ORIGINS")
@@ -36,8 +42,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+def run_startup_migrations() -> None:
+    if _should_run_migrations():
+        run_migrations()
+
 # Include all routers
 app.include_router(categories_router)
+app.include_router(countries_router)
 app.include_router(feeds_router)
 app.include_router(tags_router)
 app.include_router(leads_router)
@@ -52,6 +64,7 @@ app.include_router(diario_correo_feeds_router)
 app.include_router(scrapes_router)
 app.include_router(youtube_feeds_router)
 app.include_router(dev_router)
+app.include_router(batch_fetch_router)
 
 
 @app.get("/health", tags=["health"])

@@ -94,3 +94,52 @@ Responses
     - `URL is required.`
     - `URL must start with http or https.`
     - `URL must include a hostname.`
+
+## Batch Fetch Jobs
+
+Batch fetch runs all active sources (RSS, Instagram, YouTube, El Comercio, Diario Correo)
+in one background job. Sources fetched within the last 24 hours are skipped, and Instagram
+calls are spaced out by 5-10 seconds by default.
+
+### POST /batch-fetch
+
+Purpose: Start a batch fetch job.
+
+Query params
+- `force` (boolean, default false): Ignore the 24-hour skip window (still skips inactive feeds).
+
+Response
+- 200 OK
+  - Body: `BatchFetchJobDetailResponse` (includes steps)
+- 409 Conflict
+  - When a job is already running.
+
+### GET /batch-fetch/current
+
+Purpose: Get the current running job, or the most recent job if none are running.
+
+Response
+- 200 OK
+  - Body: `BatchFetchJobDetailResponse` or `null` if no jobs exist.
+
+### GET /batch-fetch
+
+Purpose: List recent batch jobs.
+
+Query params
+- `limit` (int, default 20, max 200)
+- `offset` (int, default 0)
+
+Response
+- 200 OK
+  - Body: array of `BatchFetchJobResponse`
+
+### GET /batch-fetch/{job_id}
+
+Purpose: Get a job with its step details.
+
+Response
+- 200 OK
+  - Body: `BatchFetchJobDetailResponse`
+- 404 Not Found
+  - If the job does not exist.

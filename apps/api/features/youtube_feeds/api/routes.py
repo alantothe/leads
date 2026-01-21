@@ -58,14 +58,19 @@ def create_youtube_feed(feed: YouTubeFeedCreate) -> YouTubeFeedResponse:
     category = fetch_one("SELECT * FROM categories WHERE id = ?", (feed.category_id,))
     if not category:
         raise HTTPException(status_code=400, detail="Category not found")
+    if not feed.country or not feed.country.strip():
+        raise HTTPException(status_code=400, detail="Country is required")
+    country_row = fetch_one("SELECT * FROM countries WHERE name = ?", (feed.country,))
+    if not country_row:
+        raise HTTPException(status_code=400, detail="Country not found")
 
     try:
         feed_id = execute_query(
             """INSERT INTO youtube_feeds
                (category_id, channel_id, display_name, channel_url, fetch_interval, is_active,
                 channel_summary, primary_topics, audience, language_region, hosts, formats,
-                tone_style, expertise_background, credibility_bias_notes)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                tone_style, expertise_background, credibility_bias_notes, country)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 feed.category_id,
                 feed.channel_id,
@@ -82,6 +87,7 @@ def create_youtube_feed(feed: YouTubeFeedCreate) -> YouTubeFeedResponse:
                 _serialize_list(feed.tone_style),
                 feed.expertise_background,
                 feed.credibility_bias_notes,
+                feed.country,
             ),
         )
         result = fetch_one("SELECT * FROM youtube_feeds WHERE id = ?", (feed_id,))
@@ -137,6 +143,7 @@ def trigger_fetch_all_youtube(
 def get_youtube_posts(
     search: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
+    country: Optional[str] = Query(None),
     youtube_feed_id: Optional[int] = Query(None),
     limit: Optional[int] = Query(None, ge=1),
     offset: Optional[int] = Query(0, ge=0),
@@ -163,6 +170,10 @@ def get_youtube_posts(
     if youtube_feed_id:
         query += " AND yp.youtube_feed_id = ?"
         params.append(youtube_feed_id)
+
+    if country:
+        query += " AND yp.country = ?"
+        params.append(country)
 
     query += " ORDER BY COALESCE(yp.published_at, yp.collected_at) DESC"
 
@@ -273,6 +284,14 @@ def update_youtube_feed(
     if feed.credibility_bias_notes is not None:
         updates.append("credibility_bias_notes = ?")
         params.append(feed.credibility_bias_notes)
+    if feed.country is not None:
+        if not feed.country.strip():
+            raise HTTPException(status_code=400, detail="Country is required")
+        country_row = fetch_one("SELECT * FROM countries WHERE name = ?", (feed.country,))
+        if not country_row:
+            raise HTTPException(status_code=400, detail="Country not found")
+        updates.append("country = ?")
+        params.append(feed.country)
     if feed.fetch_interval is not None:
         updates.append("fetch_interval = ?")
         params.append(feed.fetch_interval)

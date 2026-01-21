@@ -13,6 +13,7 @@ class ScrapeItem(BaseModel):
     summary: Optional[str] = None
     source_name: str
     collected_at: str
+    country: Optional[str] = None
     image_url: Optional[str] = None
     link: Optional[str] = None
     detected_language: Optional[str] = None

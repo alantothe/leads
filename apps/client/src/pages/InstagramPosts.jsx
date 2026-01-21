@@ -185,28 +185,32 @@ export default function InstagramPosts() {
                   </button>
                 </div>
 
-                {imageUrl && (
-                  <div className="instagram-media">
-                    {showVideo ? (
-                      <video controls poster={posterUrl || undefined}>
-                        <source src={post.media_url} type="video/mp4" />
-                      </video>
-                    ) : (
-                      <img src={imageUrl} alt="Instagram post" />
+                <div className="instagram-content">
+                  {imageUrl && (
+                    <div className="instagram-media">
+                      {showVideo ? (
+                        <video controls poster={posterUrl || undefined}>
+                          <source src={post.media_url} type="video/mp4" />
+                        </video>
+                      ) : (
+                        <img src={imageUrl} alt="Instagram post" />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="instagram-caption-section">
+                    {displayCaption && (
+                      <p className="instagram-caption">{displayCaption}</p>
                     )}
+
+                    <div className="instagram-stats">
+                      <span>{formatNumber(post.like_count)} likes</span>
+                      <span>{formatNumber(post.comment_count)} comments</span>
+                      {post.view_count && <span>{formatNumber(post.view_count)} views</span>}
+                      {post.media_type && <span className="media-type-badge">{post.media_type}</span>}
+                    </div>
                   </div>
-                )}
-
-                {displayCaption && (
-                  <p className="lead-summary">{displayCaption}</p>
-                )}
-
-              <div className="instagram-stats">
-                <span>{formatNumber(post.like_count)} likes</span>
-                <span>{formatNumber(post.comment_count)} comments</span>
-                {post.view_count && <span>{formatNumber(post.view_count)} views</span>}
-                {post.media_type && <span className="media-type-badge">{post.media_type}</span>}
-              </div>
+                </div>
 
               <div className="lead-footer">
                 <small>Posted: {post.posted_at ? new Date(post.posted_at).toLocaleDateString() : 'Unknown'}</small>

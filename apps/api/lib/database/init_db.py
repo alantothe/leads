@@ -114,15 +114,89 @@ def add_approval_columns():
     conn.close()
     print("✅ Approval columns added to all content tables")
 
+def add_country_columns():
+    """Add country column to feed and content tables when available."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    def table_exists(table_name: str) -> bool:
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+            (table_name,)
+        )
+        return cursor.fetchone() is not None
+
+    def column_exists(table_name: str, column_name: str) -> bool:
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column_name in columns
+
+    tables = [
+        "feeds",
+        "instagram_feeds",
+        "youtube_feeds",
+        "leads",
+        "instagram_posts",
+        "youtube_posts",
+        "el_comercio_posts",
+        "diario_correo_posts",
+    ]
+
+    for table in tables:
+        if not table_exists(table):
+            continue
+        if not column_exists(table, "country"):
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN country TEXT")
+
+    conn.commit()
+    conn.close()
+    print("✅ Country columns added to feed and content tables")
+
+
+def add_reddit_auto_approval():
+    """Auto-approve Reddit posts on insert and clean up pending rows."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE reddit_posts
+        SET approval_status = 'approved'
+        WHERE approval_status IS NULL OR approval_status = 'pending'
+    """)
+
+    cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS reddit_posts_auto_approve
+        AFTER INSERT ON reddit_posts
+        FOR EACH ROW
+        WHEN NEW.approval_status IS NULL OR NEW.approval_status = 'pending'
+        BEGIN
+            UPDATE reddit_posts
+            SET approval_status = 'approved'
+            WHERE id = NEW.id;
+        END;
+    """)
+
+    conn.commit()
+    conn.close()
+    print("✅ Reddit posts set to auto-approve")
+
 
 def init_database():
-    """Initialize the database with schema and seed data."""
+    """Initialize the database with schema."""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
     # Create categories table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        )
+    """)
+
+    # Create countries table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS countries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL
         )
@@ -136,6 +210,7 @@ def init_database():
             url TEXT UNIQUE NOT NULL,
             source_name TEXT NOT NULL,
             website TEXT,
+            country TEXT,
             fetch_interval INTEGER DEFAULT 30,
             last_fetched TEXT,
             is_active INTEGER DEFAULT 1,
@@ -171,6 +246,7 @@ def init_database():
             guid TEXT UNIQUE,
             title TEXT NOT NULL,
             link TEXT NOT NULL,
+            country TEXT,
             author TEXT,
             summary TEXT,
             content TEXT,
@@ -201,6 +277,7 @@ def init_database():
             username TEXT UNIQUE NOT NULL,
             display_name TEXT NOT NULL,
             profile_url TEXT,
+            country TEXT,
             fetch_interval INTEGER DEFAULT 60,
             last_fetched TEXT,
             last_max_id TEXT,
@@ -217,6 +294,7 @@ def init_database():
             instagram_feed_id INTEGER NOT NULL,
             post_id TEXT UNIQUE NOT NULL,
             username TEXT NOT NULL,
+            country TEXT,
             caption TEXT,
             media_type TEXT,
             media_url TEXT,
@@ -314,118 +392,6 @@ def init_database():
         )
     """)
 
-    # Insert seed data for categories
-    categories = [
-        (1, "Jobs"),
-        (2, "AI"),
-        (3, "Crypto"),
-        (4, "Peru"),
-    ]
-    cursor.executemany(
-        "INSERT OR IGNORE INTO categories (id, name) VALUES (?, ?)",
-        categories
-    )
-
-    # Insert seed data for feeds
-    feeds = [
-        (1, 1, "https://weworkremotely.com/categories/remote-programming-jobs.rss", "WeWorkRemotely", "weworkremotely.com", 15, "2026-01-07 10:00:00", 1),
-        (2, 2, "https://openai.com/blog/rss", "OpenAI Blog", "openai.com", 60, "2026-01-06 18:22:11", 1),
-        (3, 3, "https://cointelegraph.com/rss", "CoinTelegraph", "cointelegraph.com", 20, "2026-01-07 09:15:00", 1)
-    ]
-    cursor.executemany(
-        """INSERT OR IGNORE INTO feeds
-           (id, category_id, url, source_name, website, fetch_interval, last_fetched, is_active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        feeds
-    )
-
-    # Insert seed data for tags
-    tags = [
-        (1, "Remote"),
-        (2, "Python"),
-        (3, "Senior"),
-        (4, "DeFi"),
-        (5, "Startups")
-    ]
-    cursor.executemany(
-        "INSERT OR IGNORE INTO feed_tags (id, name) VALUES (?, ?)",
-        tags
-    )
-
-    # Insert seed data for feed_tag_map
-    feed_tag_mappings = [
-        (1, 1),  # WeWorkRemotely -> Remote
-        (1, 2),  # WeWorkRemotely -> Python
-        (1, 3),  # WeWorkRemotely -> Senior
-        (3, 4)   # CoinTelegraph -> DeFi
-    ]
-    cursor.executemany(
-        "INSERT OR IGNORE INTO feed_tag_map (feed_id, tag_id) VALUES (?, ?)",
-        feed_tag_mappings
-    )
-
-    # Insert sample leads
-    leads = [
-        (1, 1, "job-123abc", "Senior Python Developer", "https://example.com/job1", "John", "Remote Python role with AI focus", None, "2026-01-07"),
-        (2, 1, "job-999xyz", "ML Engineer", "https://example.com/job2", "Sarah", "AI startup hiring for ML position", None, "2026-01-06"),
-        (3, 2, "openai-post-55", "GPT-5 Launch", "https://example.com/post", "OpenAI", "New model released with enhanced capabilities", None, "2026-01-05")
-    ]
-    cursor.executemany(
-        """INSERT OR IGNORE INTO leads
-           (id, feed_id, guid, title, link, author, summary, content, published)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        leads
-    )
-
-    # Insert sample fetch logs
-    fetch_logs = [
-        (1, 1, "2026-01-07 10:00:00", "SUCCESS", 22, None),
-        (2, 2, "2026-01-07 10:00:01", "FAILED", 0, "Timeout"),
-        (3, 3, "2026-01-07 10:00:01", "SUCCESS", 5, None)
-    ]
-    cursor.executemany(
-        """INSERT OR IGNORE INTO fetch_logs
-           (id, feed_id, fetched_at, status, lead_count, error_message)
-           VALUES (?, ?, ?, ?, ?, ?)""",
-        fetch_logs
-    )
-
-    # Insert seed data for instagram_feeds
-    instagram_feeds = [
-        (1, 2, "openai", "OpenAI Official", "https://instagram.com/openai", 60, None, None, 1),
-        (2, 1, "ycombinator", "Y Combinator", "https://instagram.com/ycombinator", 60, None, None, 1)
-    ]
-    cursor.executemany(
-        """INSERT OR IGNORE INTO instagram_feeds
-           (id, category_id, username, display_name, profile_url, fetch_interval, last_fetched, last_max_id, is_active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        instagram_feeds
-    )
-
-    # Insert seed data for instagram_feed_tag_map
-    instagram_feed_tag_mappings = [
-        (1, 2),  # openai -> Python (assuming tag id 2 is Python from existing tags)
-        (1, 5),  # openai -> Startups
-        (2, 5)   # ycombinator -> Startups
-    ]
-    cursor.executemany(
-        "INSERT OR IGNORE INTO instagram_feed_tag_map (instagram_feed_id, tag_id) VALUES (?, ?)",
-        instagram_feed_tag_mappings
-    )
-
-    # Insert seed data for reddit_feeds
-    reddit_feeds = [
-        (1, 2, "python", "Python Community", "Programming discussions about Python"),
-        (2, 2, "artificial", "Artificial Intelligence", "AI news and discussions"),
-        (3, 3, "cryptocurrency", "Cryptocurrency", "Crypto market and tech discussions")
-    ]
-    cursor.executemany(
-        """INSERT OR IGNORE INTO reddit_feeds
-           (id, category_id, subreddit, display_name, description)
-           VALUES (?, ?, ?, ?, ?)""",
-        reddit_feeds
-    )
-
     conn.commit()
     conn.close()
     print(f"✅ Database initialized at {DATABASE_PATH}")
@@ -434,6 +400,8 @@ def init_database():
     add_image_columns()
     add_translation_columns()
     add_approval_columns()
+    add_reddit_auto_approval()
+    add_country_columns()
 
 
 def add_el_comercio_tables():
@@ -466,6 +434,7 @@ def add_el_comercio_tables():
             title TEXT NOT NULL,
             published_at TEXT,
             section TEXT DEFAULT 'gastronomia',
+            country TEXT,
             image_url TEXT,
             excerpt TEXT,
             language TEXT DEFAULT 'es',
@@ -543,6 +512,7 @@ def add_diario_correo_tables():
             title TEXT NOT NULL,
             published_at TEXT,
             section TEXT DEFAULT 'gastronomia',
+            country TEXT,
             image_url TEXT,
             excerpt TEXT,
             language TEXT DEFAULT 'es',
@@ -614,6 +584,7 @@ def add_youtube_tables():
             tone_style TEXT,
             expertise_background TEXT,
             credibility_bias_notes TEXT,
+            country TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (category_id) REFERENCES categories(id)
         )
@@ -629,6 +600,7 @@ def add_youtube_tables():
             published_at TEXT,
             channel_id TEXT,
             channel_title TEXT,
+            country TEXT,
             thumbnail_url TEXT,
             video_url TEXT,
             collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -656,6 +628,51 @@ def add_youtube_tables():
     conn.commit()
     conn.close()
     print("✅ YouTube tables created")
+
+
+def add_batch_fetch_tables():
+    """Add batch fetch job tables."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS batch_fetch_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            status TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            started_at TEXT,
+            finished_at TEXT,
+            total_steps INTEGER DEFAULT 0,
+            completed_steps INTEGER DEFAULT 0,
+            success_steps INTEGER DEFAULT 0,
+            failed_steps INTEGER DEFAULT 0,
+            skipped_steps INTEGER DEFAULT 0,
+            message TEXT,
+            error_message TEXT,
+            config_json TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS batch_fetch_job_steps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id INTEGER NOT NULL,
+            source_type TEXT NOT NULL,
+            source_id INTEGER,
+            source_name TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            started_at TEXT,
+            finished_at TEXT,
+            result_json TEXT,
+            error_message TEXT,
+            skip_reason TEXT,
+            FOREIGN KEY (job_id) REFERENCES batch_fetch_jobs(id) ON DELETE CASCADE
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+    print("✅ Batch fetch tables created")
 
 
 def add_youtube_transcript_columns():
@@ -716,10 +733,16 @@ def add_youtube_feed_profile_columns():
     print("✅ YouTube feed profile columns added")
 
 
-if __name__ == "__main__":
+def run_migrations():
+    """Run all schema setup and migrations."""
     init_database()
     add_el_comercio_tables()
     add_diario_correo_tables()
     add_youtube_tables()
     add_youtube_feed_profile_columns()
     add_youtube_transcript_columns()
+    add_batch_fetch_tables()
+
+
+if __name__ == "__main__":
+    run_migrations()

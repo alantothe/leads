@@ -5,7 +5,6 @@ import {
   useApprovalStats,
   useApproveItem,
   useRejectItem,
-  useBatchApprove,
 } from '../hooks';
 import { useDialog } from '../providers/DialogProvider';
 
@@ -87,7 +86,7 @@ export default function ApprovalQueue() {
   const [approvedBy, setApprovedBy] = useState('admin'); // Default user
   const dialog = useDialog();
 
-  const contentType = filter === 'all' ? null : filter;
+  const contentType = filter === 'all' ? null : (filter === 'articles' ? 'lead,el_comercio_post,diario_correo_post' : filter);
   const {
     data: pendingData,
     isLoading: pendingLoading,
@@ -102,15 +101,13 @@ export default function ApprovalQueue() {
 
   const approveMutation = useApproveItem();
   const rejectMutation = useRejectItem();
-  const batchApproveMutation = useBatchApprove();
 
   const pendingItems = pendingData?.items || [];
   const isLoading = pendingLoading || statsLoading;
   const error = pendingError || statsError;
   const isMutating =
     approveMutation.isPending ||
-    rejectMutation.isPending ||
-    batchApproveMutation.isPending;
+    rejectMutation.isPending;
 
 
   async function handleApprove(item) {
@@ -138,43 +135,12 @@ export default function ApprovalQueue() {
     }
   }
 
-  async function handleApproveAll() {
-    const confirmed = await dialog.confirm(`Approve all ${pendingItems.length} pending items?`);
-    if (!confirmed) return;
-
-    const items = pendingItems.map(item => ({
-      content_type: item.content_type,
-      content_id: item.content_id,
-      status: 'approved',
-      approved_by: approvedBy
-    }));
-
-    try {
-      await batchApproveMutation.mutateAsync(items);
-    } catch (err) {
-      await dialog.alert(`Error batch approving: ${err.message}`);
-    }
-  }
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Approval Queue</h1>
         <div className="approval-stats">
-          {stats && (
-            <>
-              <span className="badge">
-                {Object.values(stats).reduce((sum, s) => sum + s.pending, 0)} pending
-              </span>
-              <button
-                className="button primary"
-                onClick={handleApproveAll}
-                disabled={pendingItems.length === 0 || isMutating}
-              >
-                Approve All
-              </button>
-            </>
-          )}
           {pendingFetching && !pendingLoading && (
             <span className="badge">Refreshing...</span>
           )}
@@ -193,34 +159,16 @@ export default function ApprovalQueue() {
             All ({stats ? Object.values(stats).reduce((sum, s) => sum + s.pending, 0) : 0})
           </button>
           <button
-            className={filter === 'lead' ? 'active' : ''}
-            onClick={() => setFilter('lead')}
+            className={filter === 'articles' ? 'active' : ''}
+            onClick={() => setFilter('articles')}
           >
-            Articles ({stats?.lead?.pending || 0})
+            Articles ({(stats?.lead?.pending || 0) + (stats?.el_comercio_post?.pending || 0) + (stats?.diario_correo_post?.pending || 0)})
           </button>
           <button
             className={filter === 'instagram_post' ? 'active' : ''}
             onClick={() => setFilter('instagram_post')}
           >
             Instagram ({stats?.instagram_post?.pending || 0})
-          </button>
-          <button
-            className={filter === 'reddit_post' ? 'active' : ''}
-            onClick={() => setFilter('reddit_post')}
-          >
-            Reddit ({stats?.reddit_post?.pending || 0})
-          </button>
-          <button
-            className={filter === 'el_comercio_post' ? 'active' : ''}
-            onClick={() => setFilter('el_comercio_post')}
-          >
-            El Comercio ({stats?.el_comercio_post?.pending || 0})
-          </button>
-          <button
-            className={filter === 'diario_correo_post' ? 'active' : ''}
-            onClick={() => setFilter('diario_correo_post')}
-          >
-            Diario Correo ({stats?.diario_correo_post?.pending || 0})
           </button>
         </div>
       </div>

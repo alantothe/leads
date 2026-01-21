@@ -9,6 +9,15 @@ from datetime import datetime
 
 router = APIRouter(prefix="/approval", tags=["approval"])
 
+def auto_approve_reddit_posts() -> None:
+    """Ensure Reddit posts skip the approval queue."""
+    execute_query(
+        """UPDATE reddit_posts
+           SET approval_status = 'approved'
+           WHERE approval_status IS NULL OR approval_status = 'pending'""",
+        ()
+    )
+
 @router.get("/pending", response_model=PendingContentResponse)
 async def get_pending_content(
     content_type: Optional[str] = None,
@@ -17,12 +26,18 @@ async def get_pending_content(
 ):
     """
     Get all pending content across all types, or filter by content_type.
+    content_type can be a single type or comma-separated list of types.
+    For example: content_type=lead,el_comercio_post,diario_correo_post
     Returns unified list with content_type identifier.
     """
     items = []
+    content_types = content_type.split(',') if content_type else None
+
+    if not content_types or 'reddit_post' in content_types:
+        auto_approve_reddit_posts()
 
     # Fetch pending leads
-    if not content_type or content_type == 'lead':
+    if not content_types or 'lead' in content_types:
         leads = fetch_all(
             """SELECT l.id,
                       COALESCE(NULLIF(l.title_translated, ''), l.title) AS title,
@@ -51,7 +66,7 @@ async def get_pending_content(
         } for lead in leads])
 
     # Fetch pending Instagram posts
-    if not content_type or content_type == 'instagram_post':
+    if not content_types or 'instagram_post' in content_types:
         instagram = fetch_all(
             """SELECT ip.id,
                       COALESCE(NULLIF(ip.caption_translated, ''), ip.caption) AS caption,
@@ -80,7 +95,7 @@ async def get_pending_content(
         } for post in instagram])
 
     # Fetch pending Reddit posts
-    if not content_type or content_type == 'reddit_post':
+    if not content_types or 'reddit_post' in content_types:
         reddit = fetch_all(
             """SELECT rp.id,
                       COALESCE(NULLIF(rp.title_translated, ''), rp.title) AS title,
@@ -108,7 +123,7 @@ async def get_pending_content(
         } for post in reddit])
 
     # Fetch pending El Comercio posts
-    if not content_type or content_type == 'el_comercio_post':
+    if not content_types or 'el_comercio_post' in content_types:
         el_comercio = fetch_all(
             """SELECT ecp.id,
                       COALESCE(NULLIF(ecp.title_translated, ''), ecp.title) AS title,
@@ -137,7 +152,7 @@ async def get_pending_content(
         } for post in el_comercio])
 
     # Fetch pending Diario Correo posts
-    if not content_type or content_type == 'diario_correo_post':
+    if not content_types or 'diario_correo_post' in content_types:
         diario_correo = fetch_all(
             """SELECT dcp.id,
                       COALESCE(NULLIF(dcp.title_translated, ''), dcp.title) AS title,
@@ -259,6 +274,7 @@ async def batch_approve_content(request: BatchApprovalRequest):
 @router.get("/stats")
 async def get_approval_stats():
     """Get counts of pending/approved/rejected items by type."""
+    auto_approve_reddit_posts()
     stats = {}
     tables = {
         'leads': 'lead',

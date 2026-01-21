@@ -31,13 +31,18 @@ def create_feed(feed: FeedCreate) -> FeedResponse:
     category = fetch_one("SELECT * FROM categories WHERE id = ?", (feed.category_id,))
     if not category:
         raise HTTPException(status_code=400, detail="Category not found")
+    if not feed.country or not feed.country.strip():
+        raise HTTPException(status_code=400, detail="Country is required")
+    country_row = fetch_one("SELECT * FROM countries WHERE name = ?", (feed.country,))
+    if not country_row:
+        raise HTTPException(status_code=400, detail="Country not found")
 
     try:
         feed_id = execute_query(
             """INSERT INTO feeds
-               (category_id, url, source_name, website, fetch_interval, is_active)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (feed.category_id, feed.url, feed.source_name, feed.website,
+               (category_id, url, source_name, website, country, fetch_interval, is_active)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (feed.category_id, feed.url, feed.source_name, feed.website, feed.country,
              feed.fetch_interval, feed.is_active)
         )
         result = get_feed_with_tags(feed_id)
@@ -116,6 +121,12 @@ def update_feed(feed_id: int, feed: FeedUpdate) -> FeedResponse:
         category = fetch_one("SELECT * FROM categories WHERE id = ?", (feed.category_id,))
         if not category:
             raise HTTPException(status_code=400, detail="Category not found")
+    if feed.country is not None:
+        if not feed.country.strip():
+            raise HTTPException(status_code=400, detail="Country is required")
+        country_row = fetch_one("SELECT * FROM countries WHERE name = ?", (feed.country,))
+        if not country_row:
+            raise HTTPException(status_code=400, detail="Country not found")
 
     updates = []
     params = []
@@ -132,6 +143,9 @@ def update_feed(feed_id: int, feed: FeedUpdate) -> FeedResponse:
     if feed.website is not None:
         updates.append("website = ?")
         params.append(feed.website)
+    if feed.country is not None:
+        updates.append("country = ?")
+        params.append(feed.country)
     if feed.fetch_interval is not None:
         updates.append("fetch_interval = ?")
         params.append(feed.fetch_interval)

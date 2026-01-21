@@ -33,6 +33,7 @@ def clear_all_data():
         cursor.execute("DELETE FROM feed_tag_map")
         cursor.execute("DELETE FROM feed_tags")
         cursor.execute("DELETE FROM feeds")
+        cursor.execute("DELETE FROM countries")
         cursor.execute("DELETE FROM categories")
 
         # Reset autoincrement counters
@@ -45,6 +46,7 @@ def clear_all_data():
             "message": "All data cleared successfully",
             "cleared": [
                 "categories",
+                "countries",
                 "feeds",
                 "feed_tags",
                 "feed_tag_map",
@@ -127,6 +129,7 @@ def clear_fetched_data():
             ],
             "preserved": [
                 "categories",
+                "countries",
                 "feeds",
                 "feed_tags",
                 "feed_tag_map",

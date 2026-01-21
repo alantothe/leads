@@ -14,6 +14,9 @@ def fetch_feed(feed_id: int) -> Dict:
     feed = fetch_one("SELECT * FROM feeds WHERE id = ?", (feed_id,))
     if not feed:
         raise ValueError(f"Feed {feed_id} not found")
+    feed_country = (feed.get("country") or "").strip()
+    if not feed_country:
+        raise ValueError("Feed country is required. Set country on the feed before fetching.")
 
     try:
         # Parse the RSS feed
@@ -69,11 +72,11 @@ def fetch_feed(feed_id: int) -> Dict:
 
                     execute_query(
                         """INSERT INTO leads
-                           (feed_id, guid, title, link, author, summary, content, published,
+                           (feed_id, guid, title, link, country, author, summary, content, published,
                             detected_language, translation_status, image_url, approval_status,
                             title_translated, summary_translated, content_translated, translated_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (feed_id, entry.id, entry.title, entry.link, entry.author,
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (feed_id, entry.id, entry.title, entry.link, feed_country, entry.author,
                          clean_summary, clean_content, entry.published,
                          detected_language, translation_status, entry.image_url, 'pending',
                          title_translated, summary_translated, content_translated, translated_at)

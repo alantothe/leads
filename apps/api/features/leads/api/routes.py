@@ -18,10 +18,10 @@ def create_lead(lead: LeadCreate) -> LeadResponse:
     try:
         lead_id = execute_query(
             """INSERT INTO leads
-               (feed_id, guid, title, link, author, summary, content, published)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (lead.feed_id, lead.guid, lead.title, lead.link, lead.author,
-             lead.summary, lead.content, lead.published)
+               (feed_id, guid, title, link, country, author, summary, content, published)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (lead.feed_id, lead.guid, lead.title, lead.link, lead.country,
+             lead.author, lead.summary, lead.content, lead.published)
         )
         result = fetch_one("SELECT * FROM leads WHERE id = ?", (lead_id,))
         if not result:
@@ -39,6 +39,7 @@ def get_leads(
     search: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     tag: Optional[str] = Query(None),
+    country: Optional[str] = Query(None),
     sort: Optional[str] = Query("published", regex="^(published|collected_at)$"),
     limit: Optional[int] = Query(100, ge=1, le=1000),
     offset: Optional[int] = Query(0, ge=0)
@@ -70,6 +71,10 @@ def get_leads(
         conditions.append("(l.title LIKE ? OR l.summary LIKE ? OR l.content LIKE ?)")
         search_param = f"%{search}%"
         params.extend([search_param, search_param, search_param])
+
+    if country:
+        conditions.append("l.country = ?")
+        params.append(country)
 
     # Always filter by approved status
     conditions.append("l.approval_status = 'approved'")
@@ -173,6 +178,9 @@ def update_lead(lead_id: int, lead: LeadUpdate) -> LeadResponse:
     if lead.link is not None:
         updates.append("link = ?")
         params.append(lead.link)
+    if lead.country is not None:
+        updates.append("country = ?")
+        params.append(lead.country)
     if lead.author is not None:
         updates.append("author = ?")
         params.append(lead.author)

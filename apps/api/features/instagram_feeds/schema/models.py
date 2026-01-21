@@ -7,6 +7,7 @@ class InstagramFeedCreate(BaseModel):
     username: str
     display_name: str
     profile_url: Optional[str] = None
+    country: str
     fetch_interval: int = 60
     is_active: int = 1
 
@@ -15,6 +16,7 @@ class InstagramFeedUpdate(BaseModel):
     username: Optional[str] = None
     display_name: Optional[str] = None
     profile_url: Optional[str] = None
+    country: Optional[str] = None
     fetch_interval: Optional[int] = None
     is_active: Optional[int] = None
     last_fetched: Optional[str] = None
@@ -26,6 +28,7 @@ class InstagramFeedResponse(BaseModel):
     username: str
     display_name: str
     profile_url: Optional[str] = None
+    country: Optional[str] = None
     fetch_interval: int
     last_fetched: Optional[str] = None
     last_max_id: Optional[str] = None
@@ -39,6 +42,7 @@ class InstagramPostResponse(BaseModel):
     instagram_feed_id: int
     post_id: str
     username: str
+    country: Optional[str] = None
     caption: Optional[str] = None
     media_type: Optional[str] = None
     media_url: Optional[str] = None

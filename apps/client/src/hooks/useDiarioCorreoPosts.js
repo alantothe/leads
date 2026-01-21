@@ -11,6 +11,7 @@ function buildDiarioCorreoParams(filters) {
   if (filters?.search) params.search = filters.search;
   if (filters?.diario_correo_feed_id) params.diario_correo_feed_id = filters.diario_correo_feed_id;
   if (filters?.approval_status) params.approval_status = filters.approval_status;
+  if (filters?.country) params.country = filters.country;
   if (filters?.limit != null && filters.limit !== '') params.limit = filters.limit;
   if (filters?.offset != null && filters.offset !== '') params.offset = filters.offset;
   return params;

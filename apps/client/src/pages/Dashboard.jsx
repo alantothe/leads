@@ -1,22 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { instagramPostImageUrl, youtubePostsApi } from '../api';
 import {
   useCategories,
   useFeeds,
   useInstagramFeeds,
-  useInstagramPostsList,
-  useLeadsList,
+  useInfiniteInstagramPostsList,
+  useInfiniteLeadsList,
   useDiarioCorreoFeeds,
-  useDiarioCorreoPostsList,
+  useInfiniteDiarioCorreoPostsList,
   useElComercioFeeds,
   useInfiniteElComercioPostsList,
   useYouTubeFeeds,
-  useYouTubePostsList,
+  useInfiniteYouTubePostsList,
   useExtractYouTubeTranscript,
+  useInfiniteScrapes,
+  useSubreddits,
 } from '../hooks';
 
-const DASHBOARD_FETCH_LIMIT = 1000;
-const EL_COMERCIO_PAGE_SIZE = 30;
+const DASHBOARD_PAGE_SIZE = 15;
+const EL_COMERCIO_PAGE_SIZE = DASHBOARD_PAGE_SIZE;
+const SCRAPES_PAGE_SIZE = DASHBOARD_PAGE_SIZE;
+const RANDOM_SUBREDDIT_COUNT = 6;
 const SUMMARY_SUFFIX_RE = /\s*The post\b[\s\S]*?\bfirst appeared on\b[\s\S]*$/i;
 
 // Language code to full name mapping (ISO 639-1)
@@ -115,17 +120,45 @@ function formatNumber(value) {
   return num.toString();
 }
 
-function formatDate(value, withTime = false) {
-  if (!value) return 'Unknown';
+function parseDateValue(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (match) {
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const year = Number(match[3]);
+      const parsed = new Date(year, month - 1, day);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+  }
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value, withTime = false) {
+  const date = parseDateValue(value);
+  if (!date) return 'Unknown';
   return withTime ? date.toLocaleString() : date.toLocaleDateString();
 }
 
 function getTimestamp(value) {
-  if (!value) return 0;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+  const date = parseDateValue(value);
+  return date ? date.getTime() : 0;
+}
+
+function buildSubredditUrl(name) {
+  if (!name) return 'https://www.reddit.com/';
+  return `https://www.reddit.com/r/${name}/`;
+}
+
+function truncateText(text, maxLength = 120) {
+  if (!text) return 'No description yet.';
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}...`;
 }
 
 export default function Dashboard() {
@@ -133,40 +166,72 @@ export default function Dashboard() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showTranslated, setShowTranslated] = useState(true);
   const [transcriptStates, setTranscriptStates] = useState({});
+  const [subredditSpotlightExpanded, setSubredditSpotlightExpanded] = useState(false);
 
   const {
-    data: leads = [],
+    data: leadsData,
     isLoading: leadsLoading,
     isFetching: leadsFetching,
+    isFetchingNextPage: leadsFetchingNextPage,
+    fetchNextPage: fetchNextLeads,
+    hasNextPage: hasMoreLeads,
     error: leadsError,
-  } = useLeadsList({
-    limit: DASHBOARD_FETCH_LIMIT,
-    category: categoryFilter,
-    search: searchFilter,
-  });
+  } = useInfiniteLeadsList(
+    {
+      category: categoryFilter,
+      search: searchFilter,
+    },
+    DASHBOARD_PAGE_SIZE,
+  );
 
   const {
-    data: posts = [],
+    data: instagramPostsData,
     isLoading: postsLoading,
     isFetching: postsFetching,
+    isFetchingNextPage: postsFetchingNextPage,
+    fetchNextPage: fetchNextInstagramPosts,
+    hasNextPage: hasMoreInstagramPosts,
     error: postsError,
-  } = useInstagramPostsList({
-    limit: DASHBOARD_FETCH_LIMIT,
-    category: categoryFilter,
-    search: searchFilter,
-  });
+  } = useInfiniteInstagramPostsList(
+    {
+      category: categoryFilter,
+      search: searchFilter,
+    },
+    DASHBOARD_PAGE_SIZE,
+  );
 
   const {
-    data: youtubePosts = [],
+    data: youtubePostsData,
     isLoading: youtubePostsLoading,
     isFetching: youtubePostsFetching,
+    isFetchingNextPage: youtubePostsFetchingNextPage,
+    fetchNextPage: fetchNextYouTubePosts,
+    hasNextPage: hasMoreYouTubePosts,
     error: youtubePostsError,
-  } = useYouTubePostsList({
-    limit: DASHBOARD_FETCH_LIMIT,
-    category: categoryFilter,
-    search: searchFilter,
-  });
+  } = useInfiniteYouTubePostsList(
+    {
+      category: categoryFilter,
+      search: searchFilter,
+    },
+    DASHBOARD_PAGE_SIZE,
+  );
   const extractTranscript = useExtractYouTubeTranscript();
+
+  const {
+    data: scrapesData,
+    isLoading: scrapesLoading,
+    isFetching: scrapesFetching,
+    isFetchingNextPage: scrapesFetchingNextPage,
+    fetchNextPage: fetchNextScrapes,
+    hasNextPage: hasMoreScrapes,
+    error: scrapesError,
+  } = useInfiniteScrapes(
+    {
+      approval_status: 'approved',
+      search: searchFilter,
+    },
+    SCRAPES_PAGE_SIZE
+  );
 
   const {
     data: feeds = [],
@@ -179,6 +244,12 @@ export default function Dashboard() {
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useCategories();
+
+  const {
+    data: subreddits = [],
+    isLoading: subredditsLoading,
+    error: subredditsError,
+  } = useSubreddits();
 
   const {
     data: instagramFeeds = [],
@@ -202,18 +273,28 @@ export default function Dashboard() {
     EL_COMERCIO_PAGE_SIZE
   );
 
-  const elComercioPosts = elComercioPostsData?.pages.flat() ?? [];
-
   const {
-    data: diarioCorreoPosts = [],
+    data: diarioCorreoPostsData,
     isLoading: diarioCorreoPostsLoading,
     isFetching: diarioCorreoPostsFetching,
+    isFetchingNextPage: diarioCorreoPostsFetchingNextPage,
+    fetchNextPage: fetchNextDiarioCorreoPosts,
+    hasNextPage: hasMoreDiarioCorreoPosts,
     error: diarioCorreoPostsError,
-  } = useDiarioCorreoPostsList({
-    approval_status: 'approved',
-    search: searchFilter,
-    limit: DASHBOARD_FETCH_LIMIT,
-  });
+  } = useInfiniteDiarioCorreoPostsList(
+    {
+      approval_status: 'approved',
+      search: searchFilter,
+    },
+    DASHBOARD_PAGE_SIZE,
+  );
+
+  const leads = leadsData?.pages.flat() ?? [];
+  const posts = instagramPostsData?.pages.flat() ?? [];
+  const youtubePosts = youtubePostsData?.pages.flat() ?? [];
+  const diarioCorreoPosts = diarioCorreoPostsData?.pages.flat() ?? [];
+  const elComercioPosts = elComercioPostsData?.pages.flat() ?? [];
+  const scrapes = scrapesData?.pages.flatMap((page) => page.items) ?? [];
 
   const {
     data: elComercioFeeds = [],
@@ -277,6 +358,11 @@ export default function Dashboard() {
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],
   );
+  const subredditPicks = useMemo(() => {
+    if (!Array.isArray(subreddits) || subreddits.length === 0) return [];
+    const shuffled = [...subreddits].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, RANDOM_SUBREDDIT_COUNT);
+  }, [subreddits]);
 
   const combinedItems = useMemo(() => {
     const leadItems = leads.map((lead) => ({ type: 'lead', data: lead }));
@@ -284,21 +370,23 @@ export default function Dashboard() {
     const elComercioItems = elComercioPosts.map((post) => ({ type: 'el_comercio', data: post }));
     const diarioCorreoItems = diarioCorreoPosts.map((post) => ({ type: 'diario_correo', data: post }));
     const youtubeItems = youtubePosts.map((post) => ({ type: 'youtube', data: post }));
+    const scrapesItems = scrapes.map((scrape) => ({ type: 'scrape', data: scrape }));
     return [
       ...leadItems,
       ...instagramItems,
       ...elComercioItems,
       ...diarioCorreoItems,
       ...youtubeItems,
+      ...scrapesItems,
     ];
-  }, [leads, posts, elComercioPosts, diarioCorreoPosts, youtubePosts]);
+  }, [leads, posts, elComercioPosts, diarioCorreoPosts, youtubePosts, scrapes]);
 
   const sortedItems = useMemo(() => {
     return [...combinedItems].sort((a, b) => {
-      const aDate = a.type === 'lead' || a.type === 'el_comercio' || a.type === 'diario_correo' || a.type === 'youtube'
+      const aDate = a.type === 'lead' || a.type === 'el_comercio' || a.type === 'diario_correo' || a.type === 'youtube' || a.type === 'scrape'
         ? a.data.published || a.data.published_at || a.data.collected_at
         : a.data.posted_at || a.data.collected_at;
-      const bDate = b.type === 'lead' || b.type === 'el_comercio' || b.type === 'diario_correo' || b.type === 'youtube'
+      const bDate = b.type === 'lead' || b.type === 'el_comercio' || b.type === 'diario_correo' || b.type === 'youtube' || b.type === 'scrape'
         ? b.data.published || b.data.published_at || b.data.collected_at
         : b.data.posted_at || b.data.collected_at;
       return getTimestamp(bDate) - getTimestamp(aDate);
@@ -306,37 +394,106 @@ export default function Dashboard() {
   }, [combinedItems]);
 
   const totalCount = combinedItems.length;
+  const [visibleCount, setVisibleCount] = useState(DASHBOARD_PAGE_SIZE);
+  const loadMoreRef = useRef(null);
+  const canObserve = typeof IntersectionObserver !== 'undefined';
   const isLoading =
     leadsLoading || postsLoading || feedsLoading || instagramFeedsLoading || categoriesLoading ||
     elComercioPostsLoading || elComercioFeedsLoading ||
     diarioCorreoPostsLoading || diarioCorreoFeedsLoading ||
-    youtubePostsLoading || youtubeFeedsLoading;
-  const isFetching = leadsFetching || postsFetching ||
-    diarioCorreoPostsFetching || youtubePostsFetching ||
-    (elComercioPostsFetching && !elComercioPostsFetchingNextPage);
+    youtubePostsLoading || youtubeFeedsLoading || scrapesLoading;
+  const isFetching =
+    (leadsFetching && !leadsFetchingNextPage) ||
+    (postsFetching && !postsFetchingNextPage) ||
+    (diarioCorreoPostsFetching && !diarioCorreoPostsFetchingNextPage) ||
+    (youtubePostsFetching && !youtubePostsFetchingNextPage) ||
+    (elComercioPostsFetching && !elComercioPostsFetchingNextPage) ||
+    (scrapesFetching && !scrapesFetchingNextPage);
+  const isLoadingMore =
+    leadsFetchingNextPage ||
+    postsFetchingNextPage ||
+    diarioCorreoPostsFetchingNextPage ||
+    youtubePostsFetchingNextPage ||
+    elComercioPostsFetchingNextPage ||
+    scrapesFetchingNextPage;
+  const hasMoreItems =
+    hasMoreLeads ||
+    hasMoreInstagramPosts ||
+    hasMoreDiarioCorreoPosts ||
+    hasMoreYouTubePosts ||
+    hasMoreElComercioPosts ||
+    hasMoreScrapes;
   const error = leadsError || postsError || feedsError || instagramFeedsError || categoriesError ||
     elComercioPostsError || elComercioFeedsError ||
     diarioCorreoPostsError || diarioCorreoFeedsError ||
-    youtubePostsError || youtubeFeedsError;
-  const loadMoreRef = useRef(null);
+    youtubePostsError || youtubeFeedsError || scrapesError;
 
   useEffect(() => {
-    if (!hasMoreElComercioPosts || elComercioPostsFetchingNextPage) return;
+    setVisibleCount(DASHBOARD_PAGE_SIZE);
+  }, [categoryFilter, searchFilter]);
+
+  const loadMoreItems = useCallback(() => {
+    setVisibleCount((prev) => prev + DASHBOARD_PAGE_SIZE);
+
+    if (hasMoreLeads && !leadsFetchingNextPage) {
+      fetchNextLeads();
+    }
+    if (hasMoreInstagramPosts && !postsFetchingNextPage) {
+      fetchNextInstagramPosts();
+    }
+    if (hasMoreYouTubePosts && !youtubePostsFetchingNextPage) {
+      fetchNextYouTubePosts();
+    }
+    if (hasMoreDiarioCorreoPosts && !diarioCorreoPostsFetchingNextPage) {
+      fetchNextDiarioCorreoPosts();
+    }
+    if (hasMoreElComercioPosts && !elComercioPostsFetchingNextPage) {
+      fetchNextElComercioPosts();
+    }
+    if (hasMoreScrapes && !scrapesFetchingNextPage) {
+      fetchNextScrapes();
+    }
+  }, [
+    fetchNextDiarioCorreoPosts,
+    fetchNextElComercioPosts,
+    fetchNextInstagramPosts,
+    fetchNextLeads,
+    fetchNextScrapes,
+    fetchNextYouTubePosts,
+    hasMoreDiarioCorreoPosts,
+    hasMoreElComercioPosts,
+    hasMoreInstagramPosts,
+    hasMoreLeads,
+    hasMoreScrapes,
+    hasMoreYouTubePosts,
+    diarioCorreoPostsFetchingNextPage,
+    elComercioPostsFetchingNextPage,
+    leadsFetchingNextPage,
+    postsFetchingNextPage,
+    scrapesFetchingNextPage,
+    youtubePostsFetchingNextPage,
+  ]);
+
+  useEffect(() => {
     const node = loadMoreRef.current;
-    if (!node || typeof IntersectionObserver === 'undefined') return;
+    if (!node || !canObserve) return;
+    if (!hasMoreItems && visibleCount >= sortedItems.length) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) {
-          fetchNextElComercioPosts();
-        }
+        if (!entry?.isIntersecting) return;
+        if (isLoadingMore) return;
+        if (!hasMoreItems && visibleCount >= sortedItems.length) return;
+        loadMoreItems();
       },
       { rootMargin: '200px' }
     );
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [fetchNextElComercioPosts, hasMoreElComercioPosts, elComercioPostsFetchingNextPage]);
+  }, [canObserve, hasMoreItems, isLoadingMore, loadMoreItems, visibleCount, sortedItems.length]);
+
+  const visibleItems = sortedItems.slice(0, visibleCount);
 
   async function handleExtractTranscript(postId) {
     setTranscriptStates((prev) => ({ ...prev, [postId]: { loading: true } }));
@@ -414,15 +571,13 @@ export default function Dashboard() {
 
         <div className="lead-meta">
           {lead.author && <span>By {lead.author}</span>}
-          <span>
+          <span className="published-date">
             {lead.published
-              ? `Published: ${formatDate(lead.published)}`
-              : `Collected: ${formatDate(lead.collected_at)}`}
+              ? formatDate(lead.published)
+              : formatDate(lead.collected_at)}
           </span>
         </div>
-        {summary && <p className="lead-summary">{summary}</p>}
         <div className="lead-footer">
-          <small>Collected: {formatDate(lead.collected_at, true)}</small>
           {!showTranslated && lead.title_translated && (
             <small className="translation-hint">English translation available</small>
           )}
@@ -477,37 +632,42 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="lead-meta">
-          <span>
-            {post.posted_at
-              ? `Posted: ${formatDate(post.posted_at)}`
-              : `Collected: ${formatDate(post.collected_at)}`}
-          </span>
-        </div>
+        <div className="instagram-content">
+          {imageUrl && (
+            <div className="instagram-media">
+              {showVideo ? (
+                <video controls poster={posterUrl || undefined}>
+                  <source src={post.media_url} type="video/mp4" />
+                </video>
+              ) : (
+                <img src={imageUrl} alt="Instagram post" loading="lazy" />
+              )}
+            </div>
+          )}
 
-        {imageUrl && (
-          <div className="instagram-media">
-            {showVideo ? (
-              <video controls poster={posterUrl || undefined}>
-                <source src={post.media_url} type="video/mp4" />
-              </video>
-            ) : (
-              <img src={imageUrl} alt="Instagram post" loading="lazy" />
+          <div className="instagram-caption-section">
+            {displayCaption && (
+              <p className="instagram-caption">{displayCaption}</p>
             )}
+
+            <div className="instagram-stats">
+              <span>{formatNumber(post.like_count)} likes</span>
+              <span>{formatNumber(post.comment_count)} comments</span>
+              {post.view_count && <span>{formatNumber(post.view_count)} views</span>}
+              {post.media_type && <span className="media-type-badge">{post.media_type}</span>}
+            </div>
+
+            <div className="lead-meta">
+              <span className="published-date">
+                {post.posted_at
+                  ? formatDate(post.posted_at)
+                  : formatDate(post.collected_at)}
+              </span>
+            </div>
           </div>
-        )}
-
-        {displayCaption && <p className="lead-summary">{displayCaption}</p>}
-
-        <div className="instagram-stats">
-          <span>{formatNumber(post.like_count)} likes</span>
-          <span>{formatNumber(post.comment_count)} comments</span>
-          {post.view_count && <span>{formatNumber(post.view_count)} views</span>}
-          {post.media_type && <span className="media-type-badge">{post.media_type}</span>}
         </div>
 
         <div className="lead-footer">
-          <small>Collected: {formatDate(post.collected_at, true)}</small>
           {!showTranslated && post.caption_translated && (
             <small className="translation-hint">English translation available</small>
           )}
@@ -566,16 +726,20 @@ export default function Dashboard() {
           )}
         </div>
 
+        {displayExcerpt && (
+          <div className="lead-content">
+            <p>{displayExcerpt}</p>
+          </div>
+        )}
+
         <div className="lead-meta">
-          <span>
+          <span className="published-date">
             {post.published_at
-              ? `Published: ${formatDate(post.published_at)}`
-              : `Collected: ${formatDate(post.collected_at)}`}
+              ? formatDate(post.published_at)
+              : formatDate(post.collected_at)}
           </span>
         </div>
-        {displayExcerpt && <p className="lead-summary">{displayExcerpt}</p>}
         <div className="lead-footer">
-          <small>Collected: {formatDate(post.collected_at, true)}</small>
           {!showTranslated && post.title_translated && (
             <small className="translation-hint">English translation available</small>
           )}
@@ -636,16 +800,20 @@ export default function Dashboard() {
           )}
         </div>
 
+        {displayExcerpt && (
+          <div className="lead-content">
+            <p>{displayExcerpt}</p>
+          </div>
+        )}
+
         <div className="lead-meta">
-          <span>
+          <span className="published-date">
             {post.published_at
-              ? `Published: ${formatDate(post.published_at)}`
-              : `Collected: ${formatDate(post.collected_at)}`}
+              ? formatDate(post.published_at)
+              : formatDate(post.collected_at)}
           </span>
         </div>
-        {displayExcerpt && <p className="lead-summary">{displayExcerpt}</p>}
         <div className="lead-footer">
-          <small>Collected: {formatDate(post.collected_at, true)}</small>
           {!showTranslated && post.title_translated && (
             <small className="translation-hint">English translation available</small>
           )}
@@ -687,17 +855,14 @@ export default function Dashboard() {
         </div>
 
         <div className="lead-meta">
-          <span>
+          <span className="published-date">
             {post.published_at
-              ? `Published: ${formatDate(post.published_at)}`
-              : `Collected: ${formatDate(post.collected_at)}`}
+              ? formatDate(post.published_at)
+              : formatDate(post.collected_at)}
           </span>
         </div>
 
-        {post.description && <p className="lead-summary">{post.description}</p>}
-
         <div className="lead-footer">
-          <small>Collected: {formatDate(post.collected_at, true)}</small>
         </div>
 
         <div className="transcript-actions" style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -753,6 +918,74 @@ export default function Dashboard() {
     );
   }
 
+  function renderScrapeCard(scrape) {
+    const CONTENT_TYPE_LABELS = {
+      el_comercio_post: 'El Comercio',
+      diario_correo_post: 'Diario Correo',
+    };
+
+    const label = CONTENT_TYPE_LABELS[scrape.content_type] || scrape.content_type;
+    const sourceName = scrape.source_name || 'Unknown';
+    const isTranslated = scrape.translation_status === 'translated';
+    const languageLabel = scrape.detected_language && scrape.detected_language !== 'en'
+      ? getLanguageName(scrape.detected_language)
+      : null;
+    const displayTitle = scrape.title || 'Untitled';
+    const displaySummary = scrape.summary;
+    const topBarLabel = label || 'Scrape';
+
+    return (
+      <div
+        key={`${scrape.content_type}-${scrape.content_id}`}
+        className="lead-card lead-card-scrape"
+        data-lead-label={topBarLabel}
+      >
+        {scrape.image_url && (
+          <div className="lead-image">
+            <img src={scrape.image_url} alt={displayTitle || 'Scraped item'} loading="lazy" />
+          </div>
+        )}
+
+        <div className="lead-header">
+          <h3>
+            {scrape.link ? (
+              <a href={scrape.link} target="_blank" rel="noopener noreferrer">
+                {displayTitle}
+              </a>
+            ) : (
+              displayTitle
+            )}
+          </h3>
+        </div>
+
+        <div className="lead-badges">
+          <span className="badge">{label}</span>
+          <span className="badge">{sourceName}</span>
+          {isTranslated && <span className="badge translation-badge">Translated</span>}
+          {languageLabel && (
+            <span className="badge language-badge" data-lang-code={scrape.detected_language.toUpperCase()}>
+              <span className="language-full">{languageLabel}</span>
+              <span className="language-abbrev">{scrape.detected_language.toUpperCase()}</span>
+            </span>
+          )}
+        </div>
+
+        {displaySummary && (
+          <div className="lead-content">
+            <p>{displaySummary}</p>
+          </div>
+        )}
+
+        <div className="lead-meta">
+          <span className="published-date">{formatDate(scrape.collected_at)}</span>
+        </div>
+
+        <div className="lead-footer">
+        </div>
+      </div>
+    );
+  }
+
   const emptyMessage = categoryFilter || searchFilter
     ? 'No approved content matches your filters.'
     : 'No approved content yet. Review pending items in the approval queue.';
@@ -762,6 +995,103 @@ export default function Dashboard() {
       {isFetching && !isLoading && <div className="badge">Refreshing...</div>}
 
       {error && <div className="error">{error.message}</div>}
+
+      <div className="subreddit-spotlight card">
+        <div className="subreddit-spotlight-header">
+          <div>
+            <h3>Reddit Quick Picks</h3>
+            {!subredditSpotlightExpanded && (
+              <p className="subreddit-spotlight-subtitle">
+                Random picks from your saved subreddits for quick browsing.
+              </p>
+            )}
+          </div>
+          <div className="subreddit-spotlight-actions">
+            {!subredditSpotlightExpanded ? (
+              <button
+                className="button secondary button-sm"
+                onClick={() => setSubredditSpotlightExpanded(true)}
+              >
+                Expand
+              </button>
+            ) : (
+              <>
+                <Link className="button secondary button-sm" to="/subreddit-browser">
+                  Browse All
+                </Link>
+                <Link className="button button-sm" to="/subreddits">
+                  Manage
+                </Link>
+                <button
+                  className="button secondary button-sm"
+                  onClick={() => setSubredditSpotlightExpanded(false)}
+                >
+                  Collapse
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className={`subreddit-spotlight-content ${subredditSpotlightExpanded ? 'expanded' : 'collapsed'}`}>
+          {subredditsLoading && (
+            <p className="subreddit-spotlight-empty">Loading subreddit picks...</p>
+          )}
+
+          {!subredditsLoading && subredditsError && (
+            <p className="error-text">
+              Subreddit picks unavailable: {subredditsError.message}
+            </p>
+          )}
+
+          {!subredditsLoading && !subredditsError && subredditPicks.length === 0 && (
+            <p className="subreddit-spotlight-empty">
+              No subreddits yet. Add a few to show random picks here.
+            </p>
+          )}
+
+          {!subredditsLoading && !subredditsError && subredditPicks.length > 0 && (
+            <div className="subreddit-grid">
+              {subredditPicks.map((subreddit) => (
+                <div key={subreddit.id} className="card subreddit-card">
+                  <div className="subreddit-card-header">
+                    <div>
+                      <div className="subreddit-title">
+                        {subreddit.display_name || `r/${subreddit.subreddit}`}
+                      </div>
+                      <a
+                        className="subreddit-link"
+                        href={buildSubredditUrl(subreddit.subreddit)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        r/{subreddit.subreddit}
+                      </a>
+                    </div>
+                    <span className="badge">
+                      {categoryNames.get(subreddit.category_id) || 'Unknown'}
+                    </span>
+                  </div>
+                  <p className="subreddit-description">
+                    {truncateText(subreddit.description)}
+                  </p>
+                  <div className="subreddit-actions">
+                    <span className="subreddit-action-label">Open</span>
+                    <a
+                      className="subreddit-chip"
+                      href={buildSubredditUrl(subreddit.subreddit)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Visit Reddit
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="filters card">
         <h3>Filters</h3>
@@ -795,26 +1125,32 @@ export default function Dashboard() {
         <div className="loading">Loading approved content...</div>
       ) : (
         <div className="leads-list">
-          {sortedItems.map((item) => {
+          {visibleItems.map((item) => {
             if (item.type === 'lead') return renderLeadCard(item.data);
             if (item.type === 'instagram') return renderInstagramCard(item.data);
             if (item.type === 'el_comercio') return renderElComercioCard(item.data);
             if (item.type === 'diario_correo') return renderDiarioCorreoCard(item.data);
             if (item.type === 'youtube') return renderYouTubeCard(item.data);
+            if (item.type === 'scrape') return renderScrapeCard(item.data);
             return null;
           })}
         </div>
       )}
 
-      {hasMoreElComercioPosts && (
+      {(hasMoreItems || visibleCount < sortedItems.length) && (
         <div className="load-more" ref={loadMoreRef}>
-          <button
-            className="button secondary"
-            onClick={() => fetchNextElComercioPosts()}
-            disabled={elComercioPostsFetchingNextPage}
-          >
-            {elComercioPostsFetchingNextPage ? 'Loading more...' : 'Load more El Comercio articles'}
-          </button>
+          {!canObserve && (
+            <button
+              className="button secondary"
+              onClick={loadMoreItems}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore ? 'Loading more...' : 'Load more'}
+            </button>
+          )}
+          {canObserve && isLoadingMore && (
+            <div className="loading">Loading more...</div>
+          )}
         </div>
       )}
 

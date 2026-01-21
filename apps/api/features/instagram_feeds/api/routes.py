@@ -47,14 +47,19 @@ def create_instagram_feed(feed: InstagramFeedCreate) -> InstagramFeedResponse:
     category = fetch_one("SELECT * FROM categories WHERE id = ?", (feed.category_id,))
     if not category:
         raise HTTPException(status_code=400, detail="Category not found")
+    if not feed.country or not feed.country.strip():
+        raise HTTPException(status_code=400, detail="Country is required")
+    country_row = fetch_one("SELECT * FROM countries WHERE name = ?", (feed.country,))
+    if not country_row:
+        raise HTTPException(status_code=400, detail="Country not found")
 
     try:
         feed_id = execute_query(
             """INSERT INTO instagram_feeds
-               (category_id, username, display_name, profile_url, fetch_interval, is_active)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+               (category_id, username, display_name, profile_url, country, fetch_interval, is_active)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (feed.category_id, feed.username, feed.display_name,
-             feed.profile_url, feed.fetch_interval, feed.is_active)
+             feed.profile_url, feed.country, feed.fetch_interval, feed.is_active)
         )
         result = get_instagram_feed_with_tags(feed_id)
         if not result:
@@ -112,6 +117,7 @@ def get_instagram_posts(
     search: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     tag: Optional[str] = Query(None),
+    country: Optional[str] = Query(None),
     instagram_feed_id: Optional[int] = Query(None),
     limit: Optional[int] = Query(None, ge=1),
     offset: Optional[int] = Query(0, ge=0)
@@ -146,6 +152,10 @@ def get_instagram_posts(
     if instagram_feed_id:
         query += " AND ip.instagram_feed_id = ?"
         params.append(instagram_feed_id)
+
+    if country:
+        query += " AND ip.country = ?"
+        params.append(country)
 
     query += " ORDER BY ip.posted_at DESC"
 
@@ -242,6 +252,14 @@ def update_instagram_feed(feed_id: int, feed: InstagramFeedUpdate) -> InstagramF
     if feed.profile_url is not None:
         updates.append("profile_url = ?")
         params.append(feed.profile_url)
+    if feed.country is not None:
+        if not feed.country.strip():
+            raise HTTPException(status_code=400, detail="Country is required")
+        country_row = fetch_one("SELECT * FROM countries WHERE name = ?", (feed.country,))
+        if not country_row:
+            raise HTTPException(status_code=400, detail="Country not found")
+        updates.append("country = ?")
+        params.append(feed.country)
     if feed.fetch_interval is not None:
         updates.append("fetch_interval = ?")
         params.append(feed.fetch_interval)

@@ -49,6 +49,9 @@ def fetch_instagram_feed(feed_id: int) -> Dict:
     feed = fetch_one("SELECT * FROM instagram_feeds WHERE id = ?", (feed_id,))
     if not feed:
         raise ValueError(f"Instagram feed {feed_id} not found")
+    feed_country = (feed.get("country") or "").strip()
+    if not feed_country:
+        raise ValueError("Instagram feed country is required. Set country on the feed before fetching.")
 
     try:
         # Fetch posts from Instagram API
@@ -93,12 +96,12 @@ def fetch_instagram_feed(feed_id: int) -> Dict:
 
                     execute_query(
                         """INSERT INTO instagram_posts
-                           (instagram_feed_id, post_id, username, caption, media_type,
+                           (instagram_feed_id, post_id, username, country, caption, media_type,
                             media_url, thumbnail_url, like_count, comment_count,
                             view_count, posted_at, permalink, approval_status,
                             caption_translated, detected_language, translation_status, translated_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (feed_id, post.post_id, post.username, post.caption,
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (feed_id, post.post_id, post.username, feed_country, post.caption,
                          post.media_type, post.media_url, post.thumbnail_url,
                          post.like_count, post.comment_count, post.view_count,
                          post.posted_at, post.permalink, 'pending',

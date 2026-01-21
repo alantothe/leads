@@ -5,6 +5,7 @@ import {
   useDeleteYouTubeFeed,
   useFetchAllYouTubeFeeds,
   useFetchYouTubeFeed,
+  useCountries,
   useToggleYouTubeFeedActive,
   useUpdateYouTubeFeed,
   useYouTubeFeeds,
@@ -20,6 +21,7 @@ export default function YouTubeFeeds() {
     channel_id: '',
     display_name: '',
     channel_url: '',
+    country: '',
     fetch_interval: 60,
     is_active: 1,
     channel_summary: '',
@@ -45,6 +47,11 @@ export default function YouTubeFeeds() {
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useCategories();
+  const {
+    data: countries = [],
+    isLoading: countriesLoading,
+    error: countriesError,
+  } = useCountries();
 
   const createFeed = useCreateYouTubeFeed();
   const updateFeed = useUpdateYouTubeFeed();
@@ -53,8 +60,8 @@ export default function YouTubeFeeds() {
   const fetchFeed = useFetchYouTubeFeed();
   const fetchAllFeeds = useFetchAllYouTubeFeeds();
 
-  const error = feedsError || categoriesError;
-  const isLoading = feedsLoading || categoriesLoading;
+  const error = feedsError || categoriesError || countriesError;
+  const isLoading = feedsLoading || categoriesLoading || countriesLoading;
   const isMutating =
     createFeed.isPending ||
     updateFeed.isPending ||
@@ -165,6 +172,7 @@ export default function YouTubeFeeds() {
       channel_id: feed.channel_id,
       display_name: feed.display_name,
       channel_url: feed.channel_url || '',
+      country: feed.country || '',
       fetch_interval: feed.fetch_interval,
       is_active: feed.is_active,
       channel_summary: feed.channel_summary || '',
@@ -188,6 +196,7 @@ export default function YouTubeFeeds() {
       channel_id: '',
       display_name: '',
       channel_url: '',
+      country: '',
       fetch_interval: 60,
       is_active: 1,
       channel_summary: '',
@@ -281,6 +290,19 @@ export default function YouTubeFeeds() {
               onChange={(e) => setFormData({ ...formData, channel_url: e.target.value })}
               placeholder="https://www.youtube.com/channel/..."
             />
+          </div>
+          <div className="form-group">
+            <label>Country *</label>
+            <select
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              required
+            >
+              <option value="">Select a country</option>
+              {countries.map((country) => (
+                <option key={country.id} value={country.name}>{country.name}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Channel Summary *</label>
@@ -409,6 +431,7 @@ export default function YouTubeFeeds() {
               <th>ID</th>
               <th>Channel</th>
               <th>Category</th>
+              <th>Country</th>
               <th>Fetch Interval</th>
               <th>Status</th>
               <th>Last Fetched</th>
@@ -431,6 +454,7 @@ export default function YouTubeFeeds() {
                   </div>
                 </td>
                 <td>{getCategoryName(feed.category_id)}</td>
+                <td>{feed.country || '-'}</td>
                 <td>{feed.fetch_interval} min</td>
                 <td>
                   <span className={`badge ${feed.is_active ? 'success' : 'danger'}`}>

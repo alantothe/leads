@@ -64,6 +64,7 @@ def get_posts(
     search: Optional[str] = Query(None),
     el_comercio_feed_id: Optional[int] = Query(None),
     approval_status: Optional[str] = Query(None),
+    country: Optional[str] = Query(None),
     limit: Optional[int] = Query(15, ge=1, le=1000),
     offset: Optional[int] = Query(0, ge=0)
 ):
@@ -95,6 +96,10 @@ def get_posts(
     if approval_status:
         query += " AND approval_status = ?"
         params.append(approval_status)
+
+    if country:
+        query += " AND country = ?"
+        params.append(country)
 
     query += " ORDER BY published_at DESC LIMIT ? OFFSET ?"
     params.extend([limit, offset])

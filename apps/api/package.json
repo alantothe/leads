@@ -2,6 +2,6 @@
   "name": "python-server",
   "private": true,
   "scripts": {
-    "dev": "../../.venv/bin/python -m uvicorn app.main:app --reload --port 8428"
+    "dev": "../../scripts/show-commands.sh && ../../.venv/bin/python -m uvicorn app.main:app --reload --port 8428"
   }
 }

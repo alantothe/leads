@@ -17,6 +17,8 @@ import requests
 
 from features.translation.service.translator import get_translator
 
+DEFAULT_COUNTRY = "Peru"
+
 DATABASE_PATH = Path(__file__).parent.parent.parent.parent / "leads.db"
 FUSION_CONTENT_CACHE_PATTERN = re.compile(
     r"Fusion\.contentCache=({.*?});(?:\s*Fusion\.|\s*$)",
@@ -296,16 +298,17 @@ def fetch_diario_correo_feed(feed_id: int) -> Dict:
                 execute_query(
                     """INSERT INTO diario_correo_posts
                        (diario_correo_feed_id, url, title, published_at, section,
-                        image_url, excerpt, language, source, approval_status,
+                        country, image_url, excerpt, language, source, approval_status,
                         title_translated, excerpt_translated, detected_language,
                         translation_status, translated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
                     (
                         feed_id,
                         article["url"],
                         article["title"],
                         article.get("published_at"),
                         article.get("section") or feed.get("section"),
+                        DEFAULT_COUNTRY,
                         article.get("image_url"),
                         article.get("excerpt"),
                         "es",

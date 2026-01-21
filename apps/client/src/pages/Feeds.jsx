@@ -4,6 +4,7 @@ import {
   useCreateFeed,
   useDeleteFeed,
   useFeeds,
+  useCountries,
   useFetchAllFeeds,
   useFetchFeed,
   useToggleFeedActive,
@@ -21,6 +22,7 @@ export default function Feeds() {
     url: '',
     source_name: '',
     website: '',
+    country: '',
     fetch_interval: 30,
     is_active: 1,
   });
@@ -37,6 +39,11 @@ export default function Feeds() {
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useCategories();
+  const {
+    data: countries = [],
+    isLoading: countriesLoading,
+    error: countriesError,
+  } = useCountries();
 
   const createFeed = useCreateFeed();
   const updateFeed = useUpdateFeed();
@@ -45,8 +52,8 @@ export default function Feeds() {
   const fetchFeed = useFetchFeed();
   const fetchAllFeeds = useFetchAllFeeds();
 
-  const error = feedsError || categoriesError;
-  const isLoading = feedsLoading || categoriesLoading;
+  const error = feedsError || categoriesError || countriesError;
+  const isLoading = feedsLoading || categoriesLoading || countriesLoading;
   const isMutating =
     createFeed.isPending ||
     updateFeed.isPending ||
@@ -153,6 +160,7 @@ export default function Feeds() {
       url: feed.url,
       source_name: feed.source_name,
       website: feed.website || '',
+      country: feed.country || '',
       fetch_interval: feed.fetch_interval,
       is_active: feed.is_active,
     });
@@ -167,6 +175,7 @@ export default function Feeds() {
       url: '',
       source_name: '',
       website: '',
+      country: '',
       fetch_interval: 30,
       is_active: 1,
     });
@@ -246,6 +255,19 @@ export default function Feeds() {
             />
           </div>
           <div className="form-group">
+            <label>Country *</label>
+            <select
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              required
+            >
+              <option value="">Select a country</option>
+              {countries.map((country) => (
+                <option key={country.id} value={country.name}>{country.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
             <label>Fetch Interval (minutes)</label>
             <input
               type="number"
@@ -282,6 +304,7 @@ export default function Feeds() {
               <th>ID</th>
               <th>Source</th>
               <th>Category</th>
+              <th>Country</th>
               <th>URL</th>
               <th>Tags</th>
               <th>Interval</th>
@@ -297,6 +320,7 @@ export default function Feeds() {
                 <td>
                   <span className="badge">{getCategoryName(feed.category_id)}</span>
                 </td>
+                <td>{feed.country || '-'}</td>
                 <td>
                   <a href={feed.url} target="_blank" rel="noopener noreferrer" className="link-small">
                     {feed.url.substring(0, 40)}...

@@ -18,6 +18,7 @@ class YouTubeFeedCreate(BaseModel):
     tone_style: List[str]
     expertise_background: str
     credibility_bias_notes: str
+    country: str
 
 
 class YouTubeFeedUpdate(BaseModel):
@@ -37,6 +38,7 @@ class YouTubeFeedUpdate(BaseModel):
     tone_style: Optional[List[str]] = None
     expertise_background: Optional[str] = None
     credibility_bias_notes: Optional[str] = None
+    country: Optional[str] = None
 
 
 class YouTubeFeedResponse(BaseModel):
@@ -58,6 +60,7 @@ class YouTubeFeedResponse(BaseModel):
     tone_style: Optional[List[str]] = None
     expertise_background: Optional[str] = None
     credibility_bias_notes: Optional[str] = None
+    country: Optional[str] = None
 
 
 class YouTubePostResponse(BaseModel):
@@ -69,6 +72,7 @@ class YouTubePostResponse(BaseModel):
     published_at: Optional[str] = None
     channel_id: Optional[str] = None
     channel_title: Optional[str] = None
+    country: Optional[str] = None
     thumbnail_url: Optional[str] = None
     video_url: Optional[str] = None
     collected_at: str

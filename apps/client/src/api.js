@@ -40,6 +40,17 @@ export const categoriesApi = {
   delete: (id) => request(`/categories/${id}`, { method: 'DELETE' }),
 };
 
+export const countriesApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/countries${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/countries/${id}`),
+  create: (data) => request('/countries', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/countries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/countries/${id}`, { method: 'DELETE' }),
+};
+
 // Feeds API
 export const feedsApi = {
   getAll: (params = {}) => {
@@ -112,6 +123,20 @@ export const fetchLogsApi = {
 export const devApi = {
   clearAll: () => request('/dev/clear-all', { method: 'DELETE' }),
   clearFetched: () => request('/dev/clear-fetched', { method: 'DELETE' }),
+};
+
+// Batch Fetch API
+export const batchFetchApi = {
+  start: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/batch-fetch${query ? `?${query}` : ''}`, { method: 'POST' });
+  },
+  getCurrent: () => request('/batch-fetch/current'),
+  getById: (id) => request(`/batch-fetch/${id}`),
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/batch-fetch${query ? `?${query}` : ''}`);
+  },
 };
 
 // Instagram Feeds API

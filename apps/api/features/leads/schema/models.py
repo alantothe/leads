@@ -7,6 +7,7 @@ class LeadCreate(BaseModel):
     guid: Optional[str] = None
     title: str
     link: str
+    country: Optional[str] = None
     author: Optional[str] = None
     summary: Optional[str] = None
     content: Optional[str] = None
@@ -18,6 +19,7 @@ class LeadUpdate(BaseModel):
     guid: Optional[str] = None
     title: Optional[str] = None
     link: Optional[str] = None
+    country: Optional[str] = None
     author: Optional[str] = None
     summary: Optional[str] = None
     content: Optional[str] = None
@@ -31,6 +33,7 @@ class LeadResponse(BaseModel):
     guid: Optional[str] = None
     title: str
     link: str
+    country: Optional[str] = None
     author: Optional[str] = None
     summary: Optional[str] = None
     content: Optional[str] = None

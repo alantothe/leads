@@ -1,5 +1,7 @@
 export * from './useApproval';
+export * from './useBatchFetch';
 export * from './useCategories';
+export * from './useCountries';
 export * from './useDashboardStats';
 export * from './useDiarioCorreoFeeds';
 export * from './useDiarioCorreoPosts';

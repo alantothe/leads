@@ -3,6 +3,10 @@ export const queryKeys = {
   categories: ['categories'],
   category: (id) => ['categories', id],
 
+  // Countries
+  countries: ['countries'],
+  country: (id) => ['countries', id],
+
   // Feeds
   feeds: ['feeds'],
   feed: (id) => ['feeds', id],
@@ -23,6 +27,7 @@ export const queryKeys = {
     search = '',
     category = '',
     tag = '',
+    country = '',
     feed_id = '',
     limit = '',
     sort = '',
@@ -33,10 +38,30 @@ export const queryKeys = {
     search || '',
     category || '',
     tag || '',
+    country || '',
     feed_id || '',
     limit ?? '',
     sort || '',
     offset ?? '',
+  ],
+  leadsInfinite: ({
+    search = '',
+    category = '',
+    tag = '',
+    country = '',
+    feed_id = '',
+    sort = '',
+    limit = '',
+  } = {}) => [
+    'leads',
+    'infinite',
+    search || '',
+    category || '',
+    tag || '',
+    country || '',
+    feed_id || '',
+    sort || '',
+    limit ?? '',
   ],
 
   // Fetch Logs
@@ -59,6 +84,7 @@ export const queryKeys = {
     search = '',
     category = '',
     tag = '',
+    country = '',
     instagram_feed_id = '',
     limit = '',
     offset = '',
@@ -68,9 +94,27 @@ export const queryKeys = {
     search || '',
     category || '',
     tag || '',
+    country || '',
     instagram_feed_id || '',
     limit ?? '',
     offset ?? '',
+  ],
+  instagramPostsInfinite: ({
+    search = '',
+    category = '',
+    tag = '',
+    country = '',
+    instagram_feed_id = '',
+    limit = '',
+  } = {}) => [
+    'instagramPosts',
+    'infinite',
+    search || '',
+    category || '',
+    tag || '',
+    country || '',
+    instagram_feed_id || '',
+    limit ?? '',
   ],
 
   // Subreddits
@@ -86,6 +130,7 @@ export const queryKeys = {
     search = '',
     el_comercio_feed_id = '',
     approval_status = '',
+    country = '',
     limit = '',
     offset = '',
   } = {}) => [
@@ -94,6 +139,7 @@ export const queryKeys = {
     search || '',
     el_comercio_feed_id || '',
     approval_status || '',
+    country || '',
     limit ?? '',
     offset ?? '',
   ],
@@ -101,6 +147,7 @@ export const queryKeys = {
     search = '',
     el_comercio_feed_id = '',
     approval_status = '',
+    country = '',
     limit = '',
   } = {}) => [
     'elComercioPosts',
@@ -108,6 +155,7 @@ export const queryKeys = {
     search || '',
     el_comercio_feed_id || '',
     approval_status || '',
+    country || '',
     limit ?? '',
   ],
 
@@ -120,6 +168,7 @@ export const queryKeys = {
     search = '',
     diario_correo_feed_id = '',
     approval_status = '',
+    country = '',
     limit = '',
     offset = '',
   } = {}) => [
@@ -128,6 +177,7 @@ export const queryKeys = {
     search || '',
     diario_correo_feed_id || '',
     approval_status || '',
+    country || '',
     limit ?? '',
     offset ?? '',
   ],
@@ -135,6 +185,7 @@ export const queryKeys = {
     search = '',
     diario_correo_feed_id = '',
     approval_status = '',
+    country = '',
     limit = '',
   } = {}) => [
     'diarioCorreoPosts',
@@ -142,6 +193,7 @@ export const queryKeys = {
     search || '',
     diario_correo_feed_id || '',
     approval_status || '',
+    country || '',
     limit ?? '',
   ],
 
@@ -153,6 +205,7 @@ export const queryKeys = {
   youtubePostsList: ({
     search = '',
     category = '',
+    country = '',
     youtube_feed_id = '',
     limit = '',
     offset = '',
@@ -161,9 +214,25 @@ export const queryKeys = {
     'list',
     search || '',
     category || '',
+    country || '',
     youtube_feed_id || '',
     limit ?? '',
     offset ?? '',
+  ],
+  youtubePostsInfinite: ({
+    search = '',
+    category = '',
+    country = '',
+    youtube_feed_id = '',
+    limit = '',
+  } = {}) => [
+    'youtubePosts',
+    'infinite',
+    search || '',
+    category || '',
+    country || '',
+    youtube_feed_id || '',
+    limit ?? '',
   ],
 
   // Scrapes
@@ -172,6 +241,7 @@ export const queryKeys = {
     search = '',
     content_type = '',
     approval_status = '',
+    country = '',
     limit = '',
     offset = '',
   } = {}) => [
@@ -180,6 +250,7 @@ export const queryKeys = {
     search || '',
     content_type || '',
     approval_status || '',
+    country || '',
     limit ?? '',
     offset ?? '',
   ],
@@ -187,6 +258,7 @@ export const queryKeys = {
     search = '',
     content_type = '',
     approval_status = '',
+    country = '',
     limit = '',
   } = {}) => [
     'scrapes',
@@ -194,6 +266,7 @@ export const queryKeys = {
     search || '',
     content_type || '',
     approval_status || '',
+    country || '',
     limit ?? '',
   ],
 
@@ -206,4 +279,15 @@ export const queryKeys = {
 
   // Dashboard
   dashboardStats: ['dashboard', 'stats'],
+
+  // Batch Fetch
+  batchFetchJobs: ['batchFetch', 'jobs'],
+  batchFetchJobsList: ({ limit = '', offset = '' } = {}) => [
+    'batchFetch',
+    'jobs',
+    limit ?? '',
+    offset ?? '',
+  ],
+  batchFetchJob: (id) => ['batchFetch', 'job', id],
+  batchFetchCurrent: ['batchFetch', 'current'],
 };

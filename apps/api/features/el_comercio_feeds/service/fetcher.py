@@ -15,6 +15,8 @@ import os
 
 from features.translation.service.translator import get_translator
 
+DEFAULT_COUNTRY = "Peru"
+
 DATABASE_PATH = Path(__file__).parent.parent.parent.parent / "leads.db"
 
 
@@ -155,13 +157,13 @@ def fetch_el_comercio_feed(feed_id: int) -> Dict:
                 execute_query(
                     """INSERT INTO el_comercio_posts
                        (el_comercio_feed_id, url, title, published_at, section,
-                        image_url, excerpt, language, source, approval_status,
+                        country, image_url, excerpt, language, source, approval_status,
                         title_translated, excerpt_translated, detected_language,
                         translation_status, translated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)""",
                     (feed_id, article['url'], article['title'],
                      article.get('published_at'), 'gastronomia',
-                     article.get('image_url'), article.get('excerpt'),
+                     DEFAULT_COUNTRY, article.get('image_url'), article.get('excerpt'),
                      'es', 'elcomercio',
                      title_translated, excerpt_translated, detected_language,
                      translation_status, translated_at)

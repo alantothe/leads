@@ -1,19 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { devApi } from '../api';
-import { useDashboardStats } from '../hooks';
 import { useDialog } from '../providers/DialogProvider';
 
 export default function Settings() {
   const queryClient = useQueryClient();
   const dialog = useDialog();
-  const {
-    data: stats,
-    isLoading,
-    isFetching,
-    error,
-  } = useDashboardStats();
-
   const clearFetchedMutation = useMutation({
     mutationFn: () => devApi.clearFetched(),
     onSuccess: (result) => {
@@ -38,7 +30,7 @@ export default function Settings() {
 
   async function handleClearFetched() {
     const confirmed = await dialog.confirm(
-      'Clear all fetched content and logs (articles, Instagram, YouTube, Telegram, El Comercio, Diario Correo)? This will keep categories, feeds, tags, and feed mappings.',
+      'Clear all fetched content and logs (articles, Instagram, YouTube, Telegram, El Comercio, Diario Correo)? This will keep categories, countries, feeds, tags, and feed mappings.',
     );
     if (!confirmed) {
       return;
@@ -52,7 +44,7 @@ export default function Settings() {
 
   async function handleClearAll() {
     const confirmed = await dialog.confirm(
-      'WARNING: Clear ALL data including categories, feeds, tags, subreddits, posts, and logs across articles, Instagram, YouTube, Telegram, El Comercio, and Diario Correo? This cannot be undone!',
+      'WARNING: Clear ALL data including categories, countries, feeds, tags, subreddits, posts, and logs across articles, Instagram, YouTube, Telegram, El Comercio, and Diario Correo? This cannot be undone!',
     );
     if (!confirmed) {
       return;
@@ -64,43 +56,90 @@ export default function Settings() {
     }
   }
 
-  if (isLoading) {
-    return <div className="loading">Loading settings...</div>;
-  }
-
-  if (error) {
-    return <div className="error">{error.message}</div>;
-  }
-
   return (
     <div className="dashboard">
       <h1>Settings</h1>
-      {isFetching && <div className="badge">Refreshing...</div>}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <h3>{stats?.categories ?? 0}</h3>
-          <p>Categories</p>
-          <Link to="/categories">View All</Link>
+      <div className="manage-grid">
+        <div className="manage-section">
+          <h2>Content Management</h2>
+          <div className="manage-grid">
+            <div className="manage-card">
+              <div>
+                <h3>Tags</h3>
+                <p>Create tags and organize feeds, posts, and leads.</p>
+              </div>
+              <div className="manage-actions">
+                <Link className="button button-sm" to="/tags">Manage Tags</Link>
+              </div>
+            </div>
+            <div className="manage-card">
+              <div>
+                <h3>Categories</h3>
+                <p>Define categories used across feeds and posts.</p>
+              </div>
+              <div className="manage-actions">
+                <Link className="button button-sm" to="/categories">Manage Categories</Link>
+              </div>
+            </div>
+            <div className="manage-card">
+              <div>
+                <h3>Countries</h3>
+                <p>Maintain the list of countries used for feed targeting.</p>
+              </div>
+              <div className="manage-actions">
+                <Link className="button button-sm" to="/countries">Manage Countries</Link>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="stat-card">
-          <h3>{stats?.feeds ?? 0}</h3>
-          <p>Total Feeds</p>
-          <Link to="/feeds">View All</Link>
+
+        <div className="manage-section">
+          <h2>Social Media</h2>
+          <div className="manage-grid">
+            <div className="manage-card">
+              <div>
+                <h3>Instagram Posts</h3>
+                <p>Browse fetched Instagram posts and filter by tags.</p>
+              </div>
+              <div className="manage-actions">
+                <Link className="button button-sm" to="/instagram-posts">View Posts</Link>
+              </div>
+            </div>
+            <div className="manage-card">
+              <div>
+                <h3>YouTube Posts</h3>
+                <p>Browse fetched YouTube posts and review metadata.</p>
+              </div>
+              <div className="manage-actions">
+                <Link className="button button-sm" to="/youtube-posts">View Posts</Link>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="stat-card">
-          <h3>{stats?.activeFeeds ?? 0}</h3>
-          <p>Active Feeds</p>
-          <Link to="/feeds?active=1">View Active</Link>
-        </div>
-        <div className="stat-card">
-          <h3>{stats?.tags ?? 0}</h3>
-          <p>Tags</p>
-          <Link to="/tags">View All</Link>
-        </div>
-        <div className="stat-card">
-          <h3>{stats?.leads ?? 0}</h3>
-          <p>Leads Collected</p>
-          <Link to="/leads">View All</Link>
+
+        <div className="manage-section">
+          <h2>Articles</h2>
+          <div className="manage-grid">
+            <div className="manage-card">
+              <div>
+                <h3>Feeds</h3>
+                <p>Manage all source feeds, status, and schedules.</p>
+              </div>
+              <div className="manage-actions">
+                <Link className="button button-sm" to="/feeds">Manage Feeds</Link>
+                <Link className="button button-sm secondary" to="/feeds?active=1">Active Feeds</Link>
+              </div>
+            </div>
+            <div className="manage-card">
+              <div>
+                <h3>Scrapes</h3>
+                <p>Monitor scraping jobs and manage crawl settings.</p>
+              </div>
+              <div className="manage-actions">
+                <Link className="button button-sm" to="/scrapes/manage">Manage Scrapes</Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

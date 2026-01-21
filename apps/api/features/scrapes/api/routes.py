@@ -17,6 +17,7 @@ def build_where_clause(
     alias: str,
     search: Optional[str],
     approval_status: Optional[str],
+    country: Optional[str],
 ) -> Tuple[str, list]:
     clauses = []
     params = []
@@ -33,6 +34,10 @@ def build_where_clause(
         )
         params.extend([term, term, term, term])
 
+    if country:
+        clauses.append(f"{alias}.country = ?")
+        params.append(country)
+
     if clauses:
         return " AND " + " AND ".join(clauses), params
     return "", params
@@ -41,8 +46,9 @@ def build_where_clause(
 def build_el_comercio_queries(
     search: Optional[str],
     approval_status: Optional[str],
+    country: Optional[str],
 ) -> Tuple[str, list, str, list]:
-    where_sql, params = build_where_clause("ecp", search, approval_status)
+    where_sql, params = build_where_clause("ecp", search, approval_status, country)
     select_sql = f"""
         SELECT
             'el_comercio_post' AS content_type,
@@ -51,6 +57,7 @@ def build_el_comercio_queries(
             COALESCE(NULLIF(ecp.excerpt_translated, ''), ecp.excerpt) AS summary,
             ecf.display_name AS source_name,
             ecp.collected_at AS collected_at,
+            ecp.country AS country,
             ecp.image_url AS image_url,
             ecp.url AS link,
             ecp.detected_language AS detected_language,
@@ -71,8 +78,9 @@ def build_el_comercio_queries(
 def build_diario_correo_queries(
     search: Optional[str],
     approval_status: Optional[str],
+    country: Optional[str],
 ) -> Tuple[str, list, str, list]:
-    where_sql, params = build_where_clause("dcp", search, approval_status)
+    where_sql, params = build_where_clause("dcp", search, approval_status, country)
     select_sql = f"""
         SELECT
             'diario_correo_post' AS content_type,
@@ -81,6 +89,7 @@ def build_diario_correo_queries(
             COALESCE(NULLIF(dcp.excerpt_translated, ''), dcp.excerpt) AS summary,
             dcf.display_name AS source_name,
             dcp.collected_at AS collected_at,
+            dcp.country AS country,
             dcp.image_url AS image_url,
             dcp.url AS link,
             dcp.detected_language AS detected_language,
@@ -103,6 +112,7 @@ def get_scrapes(
     content_type: Optional[str] = Query(None),
     approval_status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    country: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
@@ -118,7 +128,7 @@ def get_scrapes(
 
     if content_type in (None, "el_comercio_post"):
         select_sql, select_params, count_sql, count_params = build_el_comercio_queries(
-            search, approval_status
+            search, approval_status, country
         )
         query_parts.append(select_sql)
         params.extend(select_params)
@@ -127,7 +137,7 @@ def get_scrapes(
 
     if content_type in (None, "diario_correo_post"):
         select_sql, select_params, count_sql, count_params = build_diario_correo_queries(
-            search, approval_status
+            search, approval_status, country
         )
         query_parts.append(select_sql)
         params.extend(select_params)

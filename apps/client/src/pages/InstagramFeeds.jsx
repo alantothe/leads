@@ -6,6 +6,7 @@ import {
   useFetchAllInstagramFeeds,
   useFetchInstagramFeed,
   useInstagramFeeds,
+  useCountries,
   useToggleInstagramFeedActive,
   useUpdateInstagramFeed,
 } from '../hooks';
@@ -19,6 +20,7 @@ export default function InstagramFeeds() {
     username: '',
     display_name: '',
     profile_url: '',
+    country: '',
     fetch_interval: 60,
     is_active: 1,
   });
@@ -35,6 +37,11 @@ export default function InstagramFeeds() {
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useCategories();
+  const {
+    data: countries = [],
+    isLoading: countriesLoading,
+    error: countriesError,
+  } = useCountries();
 
   const createFeed = useCreateInstagramFeed();
   const updateFeed = useUpdateInstagramFeed();
@@ -43,8 +50,8 @@ export default function InstagramFeeds() {
   const fetchFeed = useFetchInstagramFeed();
   const fetchAllFeeds = useFetchAllInstagramFeeds();
 
-  const error = feedsError || categoriesError;
-  const isLoading = feedsLoading || categoriesLoading;
+  const error = feedsError || categoriesError || countriesError;
+  const isLoading = feedsLoading || categoriesLoading || countriesLoading;
   const isMutating =
     createFeed.isPending ||
     updateFeed.isPending ||
@@ -115,6 +122,7 @@ export default function InstagramFeeds() {
       username: feed.username,
       display_name: feed.display_name,
       profile_url: feed.profile_url || '',
+      country: feed.country || '',
       fetch_interval: feed.fetch_interval,
       is_active: feed.is_active,
     });
@@ -129,6 +137,7 @@ export default function InstagramFeeds() {
       username: '',
       display_name: '',
       profile_url: '',
+      country: '',
       fetch_interval: 60,
       is_active: 1,
     });
@@ -204,6 +213,19 @@ export default function InstagramFeeds() {
             />
           </div>
           <div className="form-group">
+            <label>Country *</label>
+            <select
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              required
+            >
+              <option value="">Select a country</option>
+              {countries.map((country) => (
+                <option key={country.id} value={country.name}>{country.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
             <label>Fetch Interval (minutes)</label>
             <input
               type="number"
@@ -241,6 +263,7 @@ export default function InstagramFeeds() {
               <th>Username</th>
               <th>Display Name</th>
               <th>Category</th>
+              <th>Country</th>
               <th>Tags</th>
               <th>Interval</th>
               <th>Status</th>
@@ -260,6 +283,7 @@ export default function InstagramFeeds() {
                 <td>
                   <span className="badge">{getCategoryName(feed.category_id)}</span>
                 </td>
+                <td>{feed.country || '-'}</td>
                 <td>
                   {feed.tags && feed.tags.length > 0 ? (
                     <div className="tags">

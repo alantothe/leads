@@ -47,6 +47,7 @@ class DiarioCorreoPostResponse(BaseModel):
     title: str
     published_at: Optional[str] = None
     section: str
+    country: Optional[str] = None
     image_url: Optional[str] = None
     excerpt: Optional[str] = None
     language: str
