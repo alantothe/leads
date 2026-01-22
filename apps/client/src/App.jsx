@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
+import RequireAuth from './components/RequireAuth';
 import Settings from './pages/Settings';
 import Categories from './pages/Categories';
 import Countries from './pages/Countries';
@@ -18,6 +19,7 @@ import ApprovalQueue from './pages/ApprovalQueue';
 import YouTubeFeeds from './pages/YouTubeFeeds';
 import YouTubePosts from './pages/YouTubePosts';
 import BatchFetch from './pages/BatchFetch';
+import Login from './pages/Login';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 
@@ -25,7 +27,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
           <Route
             index
             element={(

@@ -1,12 +1,15 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useApprovalStats } from '../hooks/useApproval';
 import { useBatchFetchCurrent } from '../hooks/useBatchFetch';
+import { useAuth } from '../providers/AuthProvider';
 
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   // Get approval stats for notification badge
   const { data: approvalStats } = useApprovalStats();
@@ -58,6 +61,12 @@ export default function Layout() {
     setIsSettingsDropdownOpen(!isSettingsDropdownOpen);
   };
 
+  const handleLogout = () => {
+    setIsSettingsDropdownOpen(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="app">
       <nav className="navbar">
@@ -65,20 +74,6 @@ export default function Layout() {
           <div className="nav-brand">
             <Link to="/" className="nav-brand-link">
               <h1>Questurian Leads</h1>
-            </Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="nav-links">
-            <Link to="/batch-fetch" className="nav-link-status">
-              Daily Fetch
-              {isJobRunning && (
-                <span
-                  className="nav-job-indicator"
-                  title="Batch fetch is running"
-                  aria-label="Batch fetch is running"
-                />
-              )}
             </Link>
           </div>
 
@@ -96,6 +91,9 @@ export default function Layout() {
 
           {/* Desktop Actions */}
           <div className="nav-actions">
+            {user?.role ? (
+              <span className="nav-role-badge">Role: {user.role}</span>
+            ) : null}
             <div className="nav-dropdown">
               <button
                 className="nav-link-icon nav-dropdown-toggle"
@@ -121,6 +119,16 @@ export default function Layout() {
               </button>
               {isSettingsDropdownOpen && (
                 <div className="nav-dropdown-menu">
+                  <Link to="/batch-fetch" className="nav-link-status">
+                    Daily Fetch
+                    {isJobRunning && (
+                      <span
+                        className="nav-job-indicator"
+                        title="Batch fetch is running"
+                        aria-label="Batch fetch is running"
+                      />
+                    )}
+                  </Link>
                   <Link to="/approval" className="nav-link-approval">
                     Approval Queue
                     {totalPending > 0 && (
@@ -130,6 +138,9 @@ export default function Layout() {
                     )}
                   </Link>
                   <Link to="/settings">Settings</Link>
+                  <button type="button" className="nav-dropdown-button" onClick={handleLogout}>
+                    Log out
+                  </button>
                 </div>
               )}
             </div>
