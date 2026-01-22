@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -9,15 +9,6 @@ class YouTubeFeedCreate(BaseModel):
     channel_url: Optional[str] = None
     fetch_interval: int = 60
     is_active: int = 1
-    channel_summary: str
-    primary_topics: List[str]
-    audience: str
-    language_region: str
-    hosts: List[str]
-    formats: List[str]
-    tone_style: List[str]
-    expertise_background: str
-    credibility_bias_notes: str
     country: str
 
 
@@ -29,15 +20,6 @@ class YouTubeFeedUpdate(BaseModel):
     fetch_interval: Optional[int] = None
     is_active: Optional[int] = None
     last_fetched: Optional[str] = None
-    channel_summary: Optional[str] = None
-    primary_topics: Optional[List[str]] = None
-    audience: Optional[str] = None
-    language_region: Optional[str] = None
-    hosts: Optional[List[str]] = None
-    formats: Optional[List[str]] = None
-    tone_style: Optional[List[str]] = None
-    expertise_background: Optional[str] = None
-    credibility_bias_notes: Optional[str] = None
     country: Optional[str] = None
 
 
@@ -51,15 +33,6 @@ class YouTubeFeedResponse(BaseModel):
     last_fetched: Optional[str] = None
     is_active: int
     created_at: str
-    channel_summary: Optional[str] = None
-    primary_topics: Optional[List[str]] = None
-    audience: Optional[str] = None
-    language_region: Optional[str] = None
-    hosts: Optional[List[str]] = None
-    formats: Optional[List[str]] = None
-    tone_style: Optional[List[str]] = None
-    expertise_background: Optional[str] = None
-    credibility_bias_notes: Optional[str] = None
     country: Optional[str] = None
 
 
@@ -70,16 +43,9 @@ class YouTubePostResponse(BaseModel):
     title: str
     description: Optional[str] = None
     published_at: Optional[str] = None
-    channel_id: Optional[str] = None
-    channel_title: Optional[str] = None
-    country: Optional[str] = None
     thumbnail_url: Optional[str] = None
     video_url: Optional[str] = None
     collected_at: str
-    approval_status: Optional[str] = None
-    approved_by: Optional[str] = None
-    approved_at: Optional[str] = None
-    approval_notes: Optional[str] = None
     transcript: Optional[str] = None
     transcript_status: Optional[str] = None
     transcript_error: Optional[str] = None
@@ -91,8 +57,6 @@ class YouTubeVideo(BaseModel):
     title: str
     description: Optional[str] = None
     published_at: Optional[str] = None
-    channel_id: Optional[str] = None
-    channel_title: Optional[str] = None
     thumbnail_url: Optional[str] = None
     video_url: Optional[str] = None
 
@@ -104,3 +68,11 @@ class TranscriptResponse(BaseModel):
     transcript_status: Optional[str] = None
     transcript_error: Optional[str] = None
     transcript_extracted_at: Optional[str] = None
+
+
+class YouTubeChannelSearchResult(BaseModel):
+    channel_id: str
+    display_name: str
+    channel_url: str
+    description: Optional[str] = None
+    thumbnail_url: Optional[str] = None

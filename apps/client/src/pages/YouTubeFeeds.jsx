@@ -5,6 +5,7 @@ import {
   useDeleteYouTubeFeed,
   useFetchAllYouTubeFeeds,
   useFetchYouTubeFeed,
+  useSearchYouTubeChannel,
   useCountries,
   useToggleYouTubeFeedActive,
   useUpdateYouTubeFeed,
@@ -16,6 +17,8 @@ export default function YouTubeFeeds() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [maxResults, setMaxResults] = useState(5);
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupResult, setLookupResult] = useState(null);
   const [formData, setFormData] = useState({
     category_id: '',
     channel_id: '',
@@ -24,15 +27,6 @@ export default function YouTubeFeeds() {
     country: '',
     fetch_interval: 60,
     is_active: 1,
-    channel_summary: '',
-    primary_topics: '',
-    audience: '',
-    language_region: '',
-    hosts: '',
-    formats: '',
-    tone_style: '',
-    expertise_background: '',
-    credibility_bias_notes: '',
   });
   const dialog = useDialog();
 
@@ -59,6 +53,7 @@ export default function YouTubeFeeds() {
   const toggleFeedActive = useToggleYouTubeFeedActive();
   const fetchFeed = useFetchYouTubeFeed();
   const fetchAllFeeds = useFetchAllYouTubeFeeds();
+  const searchChannel = useSearchYouTubeChannel();
 
   const error = feedsError || categoriesError || countriesError;
   const isLoading = feedsLoading || categoriesLoading || countriesLoading;
@@ -68,7 +63,8 @@ export default function YouTubeFeeds() {
     deleteFeed.isPending ||
     toggleFeedActive.isPending ||
     fetchFeed.isPending ||
-    fetchAllFeeds.isPending;
+    fetchAllFeeds.isPending ||
+    searchChannel.isPending;
 
   function getSafeMaxResults() {
     const parsed = Number.parseInt(maxResults, 10);
@@ -78,40 +74,41 @@ export default function YouTubeFeeds() {
     return parsed;
   }
 
-  function parseList(value) {
-    if (Array.isArray(value)) return value;
-    if (!value) return [];
-    return value
-      .split(/[\n,]+/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  function formatList(value) {
-    if (!Array.isArray(value)) return '';
-    return value.join(', ');
-  }
-
-  function buildPayload(data) {
-    return {
-      ...data,
-      primary_topics: parseList(data.primary_topics),
-      hosts: parseList(data.hosts),
-      formats: parseList(data.formats),
-      tone_style: parseList(data.tone_style),
-    };
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      const payload = buildPayload(formData);
       if (editingId) {
-        await updateFeed.mutateAsync({ id: editingId, data: payload });
+        await updateFeed.mutateAsync({ id: editingId, data: formData });
       } else {
-        await createFeed.mutateAsync(payload);
+        await createFeed.mutateAsync(formData);
       }
       handleCancel();
+    } catch (err) {
+      await dialog.alert(`Error: ${err.message}`);
+    }
+  }
+
+  async function handleLookupChannel() {
+    const query = lookupQuery.trim();
+    if (!query) {
+      await dialog.alert('Enter a channel name to search.');
+      return;
+    }
+    try {
+      const results = await searchChannel.mutateAsync({ query, maxResults: 5 });
+      if (!results?.length) {
+        setLookupResult(null);
+        await dialog.alert('No channels found. Try a different name.');
+        return;
+      }
+      const match = results[0];
+      setLookupResult(match);
+      setFormData((prev) => ({
+        ...prev,
+        channel_id: match.channel_id,
+        display_name: match.display_name,
+        channel_url: match.channel_url || '',
+      }));
     } catch (err) {
       await dialog.alert(`Error: ${err.message}`);
     }
@@ -175,15 +172,6 @@ export default function YouTubeFeeds() {
       country: feed.country || '',
       fetch_interval: feed.fetch_interval,
       is_active: feed.is_active,
-      channel_summary: feed.channel_summary || '',
-      primary_topics: formatList(feed.primary_topics),
-      audience: feed.audience || '',
-      language_region: feed.language_region || '',
-      hosts: formatList(feed.hosts),
-      formats: formatList(feed.formats),
-      tone_style: formatList(feed.tone_style),
-      expertise_background: feed.expertise_background || '',
-      credibility_bias_notes: feed.credibility_bias_notes || '',
     });
     setShowForm(true);
   }
@@ -191,6 +179,8 @@ export default function YouTubeFeeds() {
   function handleCancel() {
     setShowForm(false);
     setEditingId(null);
+    setLookupQuery('');
+    setLookupResult(null);
     setFormData({
       category_id: '',
       channel_id: '',
@@ -199,15 +189,6 @@ export default function YouTubeFeeds() {
       country: '',
       fetch_interval: 60,
       is_active: 1,
-      channel_summary: '',
-      primary_topics: '',
-      audience: '',
-      language_region: '',
-      hosts: '',
-      formats: '',
-      tone_style: '',
-      expertise_background: '',
-      credibility_bias_notes: '',
     });
   }
 
@@ -250,17 +231,28 @@ export default function YouTubeFeeds() {
         <form className="form card" onSubmit={handleSubmit}>
           <h3>{editingId ? 'Edit YouTube Feed' : 'New YouTube Feed'}</h3>
           <div className="form-group">
-            <label>Category *</label>
-            <select
-              value={formData.category_id}
-              onChange={(e) => setFormData({ ...formData, category_id: parseInt(e.target.value) })}
-              required
-            >
-              <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+            <label>Find Channel</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={lookupQuery}
+                onChange={(e) => setLookupQuery(e.target.value)}
+                placeholder="Search by channel name"
+              />
+              <button
+                type="button"
+                className="button secondary"
+                onClick={handleLookupChannel}
+                disabled={isMutating}
+              >
+                {searchChannel.isPending ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+            {lookupResult && (
+              <small>
+                Found {lookupResult.display_name} ({lookupResult.channel_id})
+              </small>
+            )}
           </div>
           <div className="form-group">
             <label>Channel ID *</label>
@@ -292,6 +284,19 @@ export default function YouTubeFeeds() {
             />
           </div>
           <div className="form-group">
+            <label>Category *</label>
+            <select
+              value={formData.category_id}
+              onChange={(e) => setFormData({ ...formData, category_id: parseInt(e.target.value) })}
+              required
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
             <label>Country *</label>
             <select
               value={formData.country}
@@ -303,96 +308,6 @@ export default function YouTubeFeeds() {
                 <option key={country.id} value={country.name}>{country.name}</option>
               ))}
             </select>
-          </div>
-          <div className="form-group">
-            <label>Channel Summary *</label>
-            <textarea
-              value={formData.channel_summary}
-              onChange={(e) => setFormData({ ...formData, channel_summary: e.target.value })}
-              placeholder="Short paragraph summarizing the channel's travel focus and value."
-              rows="3"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Primary Topics *</label>
-            <textarea
-              value={formData.primary_topics}
-              onChange={(e) => setFormData({ ...formData, primary_topics: e.target.value })}
-              placeholder="Destinations, street food, budgeting, safety"
-              rows="2"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Audience *</label>
-            <textarea
-              value={formData.audience}
-              onChange={(e) => setFormData({ ...formData, audience: e.target.value })}
-              placeholder="Who watches and their travel style or budget."
-              rows="2"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Language/Region *</label>
-            <textarea
-              value={formData.language_region}
-              onChange={(e) => setFormData({ ...formData, language_region: e.target.value })}
-              placeholder="Primary language, region focus, currency/measurement."
-              rows="2"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Hosts/Personalities *</label>
-            <textarea
-              value={formData.hosts}
-              onChange={(e) => setFormData({ ...formData, hosts: e.target.value })}
-              placeholder="Single host, couple, local guide"
-              rows="2"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Format (long/shorts/live) *</label>
-            <textarea
-              value={formData.formats}
-              onChange={(e) => setFormData({ ...formData, formats: e.target.value })}
-              placeholder="Long-form vlogs, Shorts, live streams"
-              rows="2"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Tone/Style *</label>
-            <textarea
-              value={formData.tone_style}
-              onChange={(e) => setFormData({ ...formData, tone_style: e.target.value })}
-              placeholder="Casual, cinematic, instructional"
-              rows="2"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Expertise/Background *</label>
-            <textarea
-              value={formData.expertise_background}
-              onChange={(e) => setFormData({ ...formData, expertise_background: e.target.value })}
-              placeholder="Travel experience, credentials, years on the road."
-              rows="2"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Credibility/Bias Notes *</label>
-            <textarea
-              value={formData.credibility_bias_notes}
-              onChange={(e) => setFormData({ ...formData, credibility_bias_notes: e.target.value })}
-              placeholder="Sponsorships, affiliate links, partnerships."
-              rows="2"
-              required
-            />
           </div>
           <div className="form-group">
             <label>Fetch Interval (minutes)</label>

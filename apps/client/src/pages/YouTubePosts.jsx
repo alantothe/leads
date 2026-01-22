@@ -98,7 +98,7 @@ export default function YouTubePosts() {
               type="text"
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              placeholder="Search titles, descriptions, channels..."
+              placeholder="Search titles and descriptions..."
             />
           </div>
           <div className="form-group">

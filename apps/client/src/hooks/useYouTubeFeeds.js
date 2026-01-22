@@ -123,3 +123,12 @@ export function useFetchAllYouTubeFeeds() {
     },
   });
 }
+
+export function useSearchYouTubeChannel() {
+  return useMutation({
+    mutationFn: ({ query, maxResults }) =>
+      youtubeFeedsApi.searchChannel(
+        maxResults ? { query, max_results: maxResults } : { query }
+      ),
+  });
+}

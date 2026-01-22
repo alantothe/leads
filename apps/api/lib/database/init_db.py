@@ -137,7 +137,6 @@ def add_country_columns():
         "youtube_feeds",
         "leads",
         "instagram_posts",
-        "youtube_posts",
         "el_comercio_posts",
         "diario_correo_posts",
     ]
@@ -575,15 +574,6 @@ def add_youtube_tables():
             fetch_interval INTEGER DEFAULT 60,
             last_fetched TEXT,
             is_active INTEGER DEFAULT 1,
-            channel_summary TEXT,
-            primary_topics TEXT,
-            audience TEXT,
-            language_region TEXT,
-            hosts TEXT,
-            formats TEXT,
-            tone_style TEXT,
-            expertise_background TEXT,
-            credibility_bias_notes TEXT,
             country TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (category_id) REFERENCES categories(id)
@@ -598,16 +588,9 @@ def add_youtube_tables():
             title TEXT NOT NULL,
             description TEXT,
             published_at TEXT,
-            channel_id TEXT,
-            channel_title TEXT,
-            country TEXT,
             thumbnail_url TEXT,
             video_url TEXT,
             collected_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            approval_status TEXT DEFAULT 'approved',
-            approved_by TEXT,
-            approved_at TEXT,
-            approval_notes TEXT,
             FOREIGN KEY (youtube_feed_id) REFERENCES youtube_feeds(id) ON DELETE CASCADE
         )
     """)
@@ -699,47 +682,12 @@ def add_youtube_transcript_columns():
     print("✅ YouTube transcript columns added")
 
 
-def add_youtube_feed_profile_columns():
-    """Add uploader profile columns to youtube_feeds table."""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-
-    def column_exists(table_name, column_name):
-        cursor.execute(f"PRAGMA table_info({table_name})")
-        columns = [row[1] for row in cursor.fetchall()]
-        return column_name in columns
-
-    if not column_exists('youtube_feeds', 'channel_summary'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN channel_summary TEXT")
-    if not column_exists('youtube_feeds', 'primary_topics'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN primary_topics TEXT")
-    if not column_exists('youtube_feeds', 'audience'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN audience TEXT")
-    if not column_exists('youtube_feeds', 'language_region'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN language_region TEXT")
-    if not column_exists('youtube_feeds', 'hosts'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN hosts TEXT")
-    if not column_exists('youtube_feeds', 'formats'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN formats TEXT")
-    if not column_exists('youtube_feeds', 'tone_style'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN tone_style TEXT")
-    if not column_exists('youtube_feeds', 'expertise_background'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN expertise_background TEXT")
-    if not column_exists('youtube_feeds', 'credibility_bias_notes'):
-        cursor.execute("ALTER TABLE youtube_feeds ADD COLUMN credibility_bias_notes TEXT")
-
-    conn.commit()
-    conn.close()
-    print("✅ YouTube feed profile columns added")
-
-
 def run_migrations():
     """Run all schema setup and migrations."""
     init_database()
     add_el_comercio_tables()
     add_diario_correo_tables()
     add_youtube_tables()
-    add_youtube_feed_profile_columns()
     add_youtube_transcript_columns()
     add_batch_fetch_tables()
 

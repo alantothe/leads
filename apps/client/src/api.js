@@ -216,6 +216,10 @@ export const youtubeFeedsApi = {
   create: (data) => request('/youtube-feeds', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/youtube-feeds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/youtube-feeds/${id}`, { method: 'DELETE' }),
+  searchChannel: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/youtube-feeds/channel-search${query ? `?${query}` : ''}`);
+  },
   fetch: (id, params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/youtube-feeds/${id}/fetch${query ? `?${query}` : ''}`, { method: 'POST' });

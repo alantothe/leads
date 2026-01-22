@@ -52,9 +52,6 @@ def fetch_youtube_feed(feed_id: int, max_results: int = 5) -> Dict:
     feed = fetch_one("SELECT * FROM youtube_feeds WHERE id = ?", (feed_id,))
     if not feed:
         raise ValueError(f"YouTube feed {feed_id} not found")
-    feed_country = (feed.get("country") or "").strip()
-    if not feed_country:
-        raise ValueError("YouTube feed country is required. Set country on the feed before fetching.")
 
     try:
         videos = fetch_youtube_videos(
@@ -64,7 +61,6 @@ def fetch_youtube_feed(feed_id: int, max_results: int = 5) -> Dict:
 
         post_count = 0
         errors = []
-        approved_at = datetime.utcnow().isoformat()
 
         for video in videos:
             try:
@@ -78,22 +74,16 @@ def fetch_youtube_feed(feed_id: int, max_results: int = 5) -> Dict:
                 execute_query(
                     """INSERT INTO youtube_posts
                        (youtube_feed_id, video_id, title, description, published_at,
-                        channel_id, channel_title, country, thumbnail_url, video_url,
-                        approval_status, approved_by, approved_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?)""",
+                        thumbnail_url, video_url)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
                     (
                         feed_id,
                         video.video_id,
                         video.title,
                         video.description,
                         video.published_at,
-                        video.channel_id,
-                        video.channel_title,
-                        feed_country,
                         video.thumbnail_url,
                         video.video_url,
-                        "system",
-                        approved_at,
                     ),
                 )
                 post_count += 1

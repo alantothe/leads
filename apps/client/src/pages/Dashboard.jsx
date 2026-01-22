@@ -828,7 +828,7 @@ export default function Dashboard() {
       || categoryFilter
       || 'Unknown';
     const channelLabel =
-      youtubeFeedNames.get(post.youtube_feed_id) || post.channel_title || 'Unknown Channel';
+      youtubeFeedNames.get(post.youtube_feed_id) || 'Unknown Channel';
 
     return (
       <div key={`youtube-${post.id}`} className="lead-card lead-card-youtube">
