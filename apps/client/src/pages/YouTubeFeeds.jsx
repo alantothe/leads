@@ -7,7 +7,6 @@ import {
   useFetchYouTubeFeed,
   useSearchYouTubeChannel,
   useCountries,
-  useToggleYouTubeFeedActive,
   useUpdateYouTubeFeed,
   useYouTubeFeeds,
 } from '../hooks';
@@ -25,8 +24,6 @@ export default function YouTubeFeeds() {
     display_name: '',
     channel_url: '',
     country: '',
-    fetch_interval: 60,
-    is_active: 1,
   });
   const dialog = useDialog();
 
@@ -50,7 +47,6 @@ export default function YouTubeFeeds() {
   const createFeed = useCreateYouTubeFeed();
   const updateFeed = useUpdateYouTubeFeed();
   const deleteFeed = useDeleteYouTubeFeed();
-  const toggleFeedActive = useToggleYouTubeFeedActive();
   const fetchFeed = useFetchYouTubeFeed();
   const fetchAllFeeds = useFetchAllYouTubeFeeds();
   const searchChannel = useSearchYouTubeChannel();
@@ -61,7 +57,6 @@ export default function YouTubeFeeds() {
     createFeed.isPending ||
     updateFeed.isPending ||
     deleteFeed.isPending ||
-    toggleFeedActive.isPending ||
     fetchFeed.isPending ||
     fetchAllFeeds.isPending ||
     searchChannel.isPending;
@@ -124,13 +119,6 @@ export default function YouTubeFeeds() {
     }
   }
 
-  async function toggleActive(feed) {
-    try {
-      await toggleFeedActive.mutateAsync(feed);
-    } catch (err) {
-      await dialog.alert(`Error: ${err.message}`);
-    }
-  }
 
   async function handleFetch(feedId) {
     try {
@@ -170,8 +158,6 @@ export default function YouTubeFeeds() {
       display_name: feed.display_name,
       channel_url: feed.channel_url || '',
       country: feed.country || '',
-      fetch_interval: feed.fetch_interval,
-      is_active: feed.is_active,
     });
     setShowForm(true);
   }
@@ -187,8 +173,6 @@ export default function YouTubeFeeds() {
       display_name: '',
       channel_url: '',
       country: '',
-      fetch_interval: 60,
-      is_active: 1,
     });
   }
 
@@ -309,25 +293,6 @@ export default function YouTubeFeeds() {
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Fetch Interval (minutes)</label>
-            <input
-              type="number"
-              value={formData.fetch_interval}
-              onChange={(e) => setFormData({ ...formData, fetch_interval: parseInt(e.target.value) })}
-              min="1"
-            />
-          </div>
-          <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={formData.is_active === 1}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })}
-              />
-              {' '}Active
-            </label>
-          </div>
           <div className="form-actions">
             <button type="submit" className="button" disabled={isMutating}>
               {editingId ? 'Update' : 'Create'}
@@ -347,8 +312,6 @@ export default function YouTubeFeeds() {
               <th>Channel</th>
               <th>Category</th>
               <th>Country</th>
-              <th>Fetch Interval</th>
-              <th>Status</th>
               <th>Last Fetched</th>
               <th>Actions</th>
             </tr>
@@ -370,12 +333,6 @@ export default function YouTubeFeeds() {
                 </td>
                 <td>{getCategoryName(feed.category_id)}</td>
                 <td>{feed.country || '-'}</td>
-                <td>{feed.fetch_interval} min</td>
-                <td>
-                  <span className={`badge ${feed.is_active ? 'success' : 'danger'}`}>
-                    {feed.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
                 <td>{feed.last_fetched ? new Date(feed.last_fetched).toLocaleString() : 'Never'}</td>
                 <td>
                   <div className="action-buttons">
@@ -384,9 +341,6 @@ export default function YouTubeFeeds() {
                     </button>
                     <button className="button-sm" onClick={() => handleEdit(feed)} disabled={isMutating}>
                       Edit
-                    </button>
-                    <button className="button-sm warning" onClick={() => toggleActive(feed)} disabled={isMutating}>
-                      {feed.is_active ? 'Deactivate' : 'Activate'}
                     </button>
                     <button className="button-sm danger" onClick={() => handleDelete(feed.id)} disabled={isMutating}>
                       Delete

@@ -150,6 +150,43 @@ function getTimestamp(value) {
   return date ? date.getTime() : 0;
 }
 
+// Extract the best available date from an item based on its type
+function getItemDate(item) {
+  const { type, data } = item;
+
+  // Try different date fields in order of preference
+  const dateFields = [];
+
+  switch (type) {
+    case 'lead':
+      dateFields.push(data.published, data.collected_at);
+      break;
+    case 'instagram':
+      dateFields.push(data.posted_at, data.collected_at);
+      break;
+    case 'el_comercio':
+    case 'diario_correo':
+    case 'youtube':
+      dateFields.push(data.published_at, data.collected_at);
+      break;
+    case 'scrape':
+      dateFields.push(data.collected_at);
+      break;
+    default:
+      dateFields.push(data.published, data.published_at, data.posted_at, data.collected_at);
+  }
+
+  // Return the first valid date found
+  for (const dateField of dateFields) {
+    if (dateField) {
+      const parsed = parseDateValue(dateField);
+      if (parsed) return parsed;
+    }
+  }
+
+  return null;
+}
+
 function buildSubredditUrl(name) {
   if (!name) return 'https://www.reddit.com/';
   return `https://www.reddit.com/r/${name}/`;
@@ -383,13 +420,11 @@ export default function Dashboard() {
 
   const sortedItems = useMemo(() => {
     return [...combinedItems].sort((a, b) => {
-      const aDate = a.type === 'lead' || a.type === 'el_comercio' || a.type === 'diario_correo' || a.type === 'youtube' || a.type === 'scrape'
-        ? a.data.published || a.data.published_at || a.data.collected_at
-        : a.data.posted_at || a.data.collected_at;
-      const bDate = b.type === 'lead' || b.type === 'el_comercio' || b.type === 'diario_correo' || b.type === 'youtube' || b.type === 'scrape'
-        ? b.data.published || b.data.published_at || b.data.collected_at
-        : b.data.posted_at || b.data.collected_at;
-      return getTimestamp(bDate) - getTimestamp(aDate);
+      const aDate = getItemDate(a);
+      const bDate = getItemDate(b);
+      const aTimestamp = aDate ? aDate.getTime() : 0;
+      const bTimestamp = bDate ? bDate.getTime() : 0;
+      return bTimestamp - aTimestamp; // Descending order (newest first)
     });
   }, [combinedItems]);
 

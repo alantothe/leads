@@ -7,7 +7,6 @@ import {
   useCountries,
   useFetchAllFeeds,
   useFetchFeed,
-  useToggleFeedActive,
   useUpdateFeed,
 } from '../hooks';
 import { useDialog } from '../providers/DialogProvider';
@@ -23,8 +22,6 @@ export default function Feeds() {
     source_name: '',
     website: '',
     country: '',
-    fetch_interval: 30,
-    is_active: 1,
   });
   const dialog = useDialog();
 
@@ -48,7 +45,6 @@ export default function Feeds() {
   const createFeed = useCreateFeed();
   const updateFeed = useUpdateFeed();
   const deleteFeed = useDeleteFeed();
-  const toggleFeedActive = useToggleFeedActive();
   const fetchFeed = useFetchFeed();
   const fetchAllFeeds = useFetchAllFeeds();
 
@@ -58,7 +54,6 @@ export default function Feeds() {
     createFeed.isPending ||
     updateFeed.isPending ||
     deleteFeed.isPending ||
-    toggleFeedActive.isPending ||
     fetchFeed.isPending ||
     fetchAllFeeds.isPending;
 
@@ -94,13 +89,6 @@ export default function Feeds() {
     }
   }
 
-  async function toggleActive(feed) {
-    try {
-      await toggleFeedActive.mutateAsync(feed);
-    } catch (err) {
-      await dialog.alert(`Error: ${err.message}`);
-    }
-  }
 
   async function handleFetch(feedId) {
     const feedName = feeds.find(feed => feed.id === feedId)?.source_name || `Feed ${feedId}`;
@@ -161,8 +149,6 @@ export default function Feeds() {
       source_name: feed.source_name,
       website: feed.website || '',
       country: feed.country || '',
-      fetch_interval: feed.fetch_interval,
-      is_active: feed.is_active,
     });
     setShowForm(true);
   }
@@ -176,8 +162,6 @@ export default function Feeds() {
       source_name: '',
       website: '',
       country: '',
-      fetch_interval: 30,
-      is_active: 1,
     });
   }
 
@@ -267,25 +251,6 @@ export default function Feeds() {
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Fetch Interval (minutes)</label>
-            <input
-              type="number"
-              value={formData.fetch_interval}
-              onChange={(e) => setFormData({ ...formData, fetch_interval: parseInt(e.target.value) })}
-              min="1"
-            />
-          </div>
-          <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={formData.is_active === 1}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })}
-              />
-              {' '}Active
-            </label>
-          </div>
           <div className="form-actions">
             <button type="submit" className="button" disabled={isMutating}>
               {editingId ? 'Update' : 'Create'}
@@ -307,8 +272,6 @@ export default function Feeds() {
               <th>Country</th>
               <th>URL</th>
               <th>Tags</th>
-              <th>Interval</th>
-              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -335,25 +298,12 @@ export default function Feeds() {
                     </div>
                   ) : '-'}
                 </td>
-                <td>{feed.fetch_interval}m</td>
-                <td>
-                  <span className={`status ${feed.is_active === 1 ? 'active' : 'inactive'}`}>
-                    {feed.is_active === 1 ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
                 <td className="actions">
                   <button className="button-sm success" onClick={() => handleFetch(feed.id)} disabled={isMutating}>
                     {fetchFeed.isPending && activeFetchId === feed.id ? 'Fetching...' : 'Fetch'}
                   </button>
                   <button className="button-sm" onClick={() => handleEdit(feed)}>
                     Edit
-                  </button>
-                  <button
-                    className={`button-sm ${feed.is_active === 1 ? 'warning' : 'success'}`}
-                    onClick={() => toggleActive(feed)}
-                    disabled={isMutating}
-                  >
-                    {feed.is_active === 1 ? 'Deactivate' : 'Activate'}
                   </button>
                   <button className="button-sm danger" onClick={() => handleDelete(feed.id)} disabled={isMutating}>
                     Delete

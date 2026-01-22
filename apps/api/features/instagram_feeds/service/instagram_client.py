@@ -1,8 +1,18 @@
 import os
-import requests
-from typing import Dict, List, Optional
+from pathlib import Path
 from datetime import datetime
+from typing import Dict, List, Optional
+
+import requests
+from dotenv import load_dotenv
+
 from features.instagram_feeds.schema.models import InstagramPost
+
+_HERE = Path(__file__).resolve()
+_REPO_ROOT = _HERE.parents[5]
+_API_ROOT = _HERE.parents[3]
+load_dotenv(_REPO_ROOT / ".env")
+load_dotenv(_API_ROOT / ".env")
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "9259a11e20mshc29372910a530bcp1d41dbjsn3cc85ab17473")
 RAPIDAPI_HOST = "instagram120.p.rapidapi.com"
